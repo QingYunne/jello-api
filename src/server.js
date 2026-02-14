@@ -1,30 +1,32 @@
+/* eslint-disable no-console */
 import express from 'express'
-import { mapOrder } from '~/utils/sorts.js'
+import { env } from '~/config/environment'
+import { CONNECT_DB, GET_DB, CLOSE_DB } from '~/config/mongodb'
+import exitHook from 'async-exit-hook'
+import { APIs_V1 } from '~/routes/v1'
 
 const app = express()
 
-const hostname = 'localhost'
-const port = 8017
+const { APP_HOST: hostname, APP_PORT: port } = env
 
-app.get('/', (req, res) => {
-  // Test Absolute import mapOrder
-  console.log(
-    mapOrder(
-      [
-        { id: 'id-1', name: 'One' },
-        { id: 'id-2', name: 'Two' },
-        { id: 'id-3', name: 'Three' },
-        { id: 'id-4', name: 'Four' },
-        { id: 'id-5', name: 'Five' }
-      ],
-      ['id-5', 'id-4', 'id-2', 'id-3', 'id-1'],
-      'id'
-    )
-  )
-  res.end('<h1>Hello World!</h1><hr>')
-})
+const START_SERVER = () => {
+  app.use('/v1', APIs_V1)
 
-app.listen(port, hostname, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Hello Trung Quan Dev, I am running at ${hostname}:${port}/`)
-})
+  app.listen(port, hostname, () => {
+    console.log(`Server is running at: ${hostname}:${port}/`)
+  })
+
+  exitHook(async () => {
+    console.log('Exiting App')
+    await CLOSE_DB()
+  })
+}
+
+// có thể dùng cách (async () => {try {} catch {}})() (IIFE)
+CONNECT_DB()
+  .then(() => console.log('Connected to MongoDB Cloud Atlas'))
+  .then(() => START_SERVER())
+  .catch((err) => {
+    console.error(err)
+    process.exit(0)
+  })
