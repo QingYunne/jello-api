@@ -1,12 +1,14 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
+import { BOARD_TYPE } from '~/utils/constants'
 
 const COLLECTION_NAME = 'boards'
 const COLLECTION_SCHEMA = Joi.object({
   title: Joi.string().required().min(3).max(100).trim().strict(),
   slug: Joi.string().required().min(3).trim().strict(),
   description: Joi.string().required().min(3).max(255).trim().strict(),
+  type: Joi.string().valid(BOARD_TYPE.PUBLIC, BOARD_TYPE.PRIVATE).required(),
   columnOrderIds: Joi.array().items(Joi.string()).default([]),
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
