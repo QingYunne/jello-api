@@ -2,6 +2,8 @@ import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { BOARD_TYPE } from '~/utils/constants'
+import columnModel from '~/models/columnModel'
+import cardModel from '~/models/cardModel'
 
 const COLLECTION_NAME = 'boards'
 const COLLECTION_SCHEMA = Joi.object({
@@ -29,10 +31,38 @@ const create = async (board) => {
 }
 
 const find = async (boardId) => {
+  // const res = await GET_DB()
+  //   .collection(COLLECTION_NAME)
+  //   .findOne({ _id: new ObjectId(boardId) })
   const res = await GET_DB()
     .collection(COLLECTION_NAME)
-    .findOne({ _id: new ObjectId(boardId) })
-  return res
+    .aggregate([
+      {
+        $match: {
+          _id: new ObjectId(boardId),
+          _destroy: false
+        }
+      },
+      {
+        $lookup: {
+          from: columnModel.COLLECTION_NAME,
+          localField: '_id',
+          foreignField: 'boardId',
+          as: 'columns'
+        }
+      },
+      {
+        $lookup: {
+          from: cardModel.COLLECTION_NAME,
+          localField: '_id',
+          foreignField: 'boardId',
+          as: 'cards'
+        }
+      }
+    ])
+    .toArray()
+
+  return res[0] || {}
 }
 
 export default {

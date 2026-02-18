@@ -11,6 +11,22 @@ const createBoard = async (board) => {
 const getBoard = async (boardId) => {
   const board = await boardModel.find(boardId)
   if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found')
+
+  const cardsByColumn = {}
+  board.cards.forEach((card) => {
+    const columnId = card.columnId.toString()
+    if (!cardsByColumn[columnId]) {
+      cardsByColumn[columnId] = []
+    }
+    cardsByColumn[columnId].push(card)
+  })
+
+  board.columns.forEach((column) => {
+    const columnId = column._id.toString()
+    column.cards = cardsByColumn[columnId] || []
+  })
+
+  delete board.cards
   return board
 }
 
