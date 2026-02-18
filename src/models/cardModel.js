@@ -1,8 +1,8 @@
 import Joi from 'joi'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 
-const CARD_COLLECTION_NAME = 'cards'
-const CARD_COLLECTION_SCHEMA = Joi.object({
+const COLLECTION_NAME = 'cards'
+const COLLECTION_SCHEMA = Joi.object({
   boardId: Joi.string()
     .required()
     .pattern(OBJECT_ID_RULE)
@@ -20,7 +20,4 @@ const CARD_COLLECTION_SCHEMA = Joi.object({
   _destroy: Joi.boolean().default(false)
 })
 
-export const cardModel = {
-  CARD_COLLECTION_NAME,
-  CARD_COLLECTION_SCHEMA
-}
+export default { COLLECTION_NAME, COLLECTION_SCHEMA }
