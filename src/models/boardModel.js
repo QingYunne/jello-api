@@ -4,6 +4,7 @@ import { GET_DB } from '~/config/mongodb'
 import { BOARD_TYPE } from '~/utils/constants'
 import columnModel from '~/models/columnModel'
 import cardModel from '~/models/cardModel'
+import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 
 const COLLECTION_NAME = 'boards'
 const COLLECTION_SCHEMA = Joi.object({
@@ -11,7 +12,9 @@ const COLLECTION_SCHEMA = Joi.object({
   slug: Joi.string().required().min(3).trim().strict(),
   description: Joi.string().required().min(3).max(255).trim().strict(),
   type: Joi.string().valid(BOARD_TYPE.PUBLIC, BOARD_TYPE.PRIVATE).required(),
-  columnOrderIds: Joi.array().items(Joi.string()).default([]),
+  columnOrderIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
   _destroy: Joi.boolean().default(false)
@@ -62,12 +65,34 @@ const find = async (boardId) => {
     ])
     .toArray()
 
-  return res[0] || {}
+  return res[0] || null
+}
+
+const addColumnOrderIds = async (column) => {
+  const res = await GET_DB()
+    .collection(COLLECTION_NAME)
+    .findOneAndUpdate(
+      { _id: new ObjectId(column.boardId) },
+      {
+        $push: { columnOrderIds: new ObjectId(column._id) },
+        $set: { updatedAt: Date.now() }
+      },
+      { returnDocument: 'after' }
+    )
+  return res || null
+}
+
+const existById = async (id) => {
+  return await GET_DB()
+    .collection(COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(id) })
 }
 
 export default {
   COLLECTION_NAME,
   COLLECTION_SCHEMA,
   create,
-  find
+  find,
+  existById,
+  addColumnOrderIds
 }
