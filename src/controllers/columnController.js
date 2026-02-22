@@ -6,6 +6,13 @@ const createColumn = async (req, res, next) => {
   res.status(StatusCodes.CREATED).json(createdColumn)
 }
 
+const updateColumn = async (req, res, next) => {
+  const columnId = req.params.id
+  const updatedColumn = await columnService.updateColumn(columnId, req.body)
+  res.status(StatusCodes.OK).json(updatedColumn)
+}
+
 export const columnController = {
-  createColumn
+  createColumn,
+  updateColumn
 }

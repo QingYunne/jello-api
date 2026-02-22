@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { StatusCodes } from 'http-status-codes'
+import { log } from 'node:console'
 import { env } from '~/config/environment'
 
 export const errorHandlingMiddleware = (err, req, res, next) => {

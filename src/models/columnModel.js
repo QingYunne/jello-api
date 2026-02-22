@@ -1,9 +1,12 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
+import { commonFields } from '~/helpers'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 
 const COLLECTION_NAME = 'columns'
+const INVALID_UPDATE_FIELDS = ['_id', 'createdAt', 'boardId']
+
 const COLLECTION_SCHEMA = Joi.object({
   boardId: Joi.string()
     .required()
@@ -15,9 +18,7 @@ const COLLECTION_SCHEMA = Joi.object({
     .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
     .default([]),
 
-  createdAt: Joi.date().timestamp('javascript').default(Date.now),
-  updatedAt: Joi.date().timestamp('javascript').default(null),
-  _destroy: Joi.boolean().default(false)
+  ...commonFields
 })
 
 const validate = async (data) => {
@@ -57,10 +58,42 @@ const existById = async (id) => {
     .findOne({ _id: new ObjectId(id) })
 }
 
+const update = async (
+  columnId,
+  { pushData = {}, setData = {}, pullData = {} }
+) => {
+  const sanitizedSetData = Object.fromEntries(
+    Object.entries(setData).filter(
+      ([key]) => !INVALID_UPDATE_FIELDS.includes(key)
+    )
+  )
+  const updateOperation = {}
+  if (Object.keys(setData).length > 0) {
+    updateOperation.$set = { ...sanitizedSetData }
+  }
+
+  if (Object.keys(pushData).length > 0) {
+    updateOperation.$push = { ...pushData }
+  }
+  if (Object.keys(updateOperation).length === 0) return null
+  updateOperation.$set = {
+    ...(updateOperation.$set || {}),
+    updatedAt: Date.now()
+  }
+  const res = await GET_DB()
+    .collection(COLLECTION_NAME)
+    .findOneAndUpdate({ _id: new ObjectId(columnId) }, updateOperation, {
+      returnDocument: 'after'
+    })
+
+  return res || null
+}
+
 export default {
   COLLECTION_NAME,
   COLLECTION_SCHEMA,
   create,
   existById,
-  addCardOrderIds
+  addCardOrderIds,
+  update
 }
