@@ -12,6 +12,8 @@ Router.route('/')
   })
   .post(boardValidation.createNew, asyncHandler(boardController.createBoard))
 
-Router.route('/:id').get(asyncHandler(boardController.getBoard)).put()
+Router.route('/:id')
+  .get(asyncHandler(boardController.getBoard))
+  .patch(asyncHandler(boardController.updateBoard))
 
 export const boardRoute = Router

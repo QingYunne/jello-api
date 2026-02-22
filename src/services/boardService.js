@@ -2,6 +2,7 @@ import { slugify } from '~/utils/formatters'
 import boardModel from '~/models/boardModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
+import { ObjectId } from 'mongodb'
 
 const createBoard = async (board) => {
   const newBoard = { ...board, slug: slugify(board.title) }
@@ -30,7 +31,27 @@ const getBoard = async (boardId) => {
   return board
 }
 
+const updateBoard = async (boardId, data) => {
+  const pushData = {}
+  const setData = {}
+  Object.entries(data).forEach(([key, value]) => {
+    if (key === 'columnOrderIds') {
+      setData[key] = value.map((id) => new ObjectId(id))
+    } else {
+      setData[key] = value
+    }
+  })
+  return await boardModel.update(boardId, { pushData, setData })
+}
+
+const pushColumnOrderIds = async (boardId, columnId) => {
+  const data = { columnOrderIds: new ObjectId(columnId) }
+  return await boardModel.update(boardId, { pushData: data })
+}
+
 export const boardService = {
   createBoard,
-  getBoard
+  getBoard,
+  updateBoard,
+  pushColumnOrderIds
 }

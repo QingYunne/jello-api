@@ -5,8 +5,11 @@ import { BOARD_TYPE } from '~/utils/constants'
 import columnModel from '~/models/columnModel'
 import cardModel from '~/models/cardModel'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import { commonFields, updateTimestamps } from '~/helpers'
 
+const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 const COLLECTION_NAME = 'boards'
+
 const COLLECTION_SCHEMA = Joi.object({
   title: Joi.string().required().min(3).max(100).trim().strict(),
   slug: Joi.string().required().min(3).trim().strict(),
@@ -15,9 +18,7 @@ const COLLECTION_SCHEMA = Joi.object({
   columnOrderIds: Joi.array()
     .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
     .default([]),
-  createdAt: Joi.date().timestamp('javascript').default(Date.now),
-  updatedAt: Joi.date().timestamp('javascript').default(null),
-  _destroy: Joi.boolean().default(false)
+  ...commonFields
 })
 
 const validate = async (data) => {
@@ -68,24 +69,38 @@ const find = async (boardId) => {
   return res[0] || null
 }
 
-const addColumnOrderIds = async (column) => {
-  const res = await GET_DB()
-    .collection(COLLECTION_NAME)
-    .findOneAndUpdate(
-      { _id: new ObjectId(column.boardId) },
-      {
-        $push: { columnOrderIds: new ObjectId(column._id) },
-        $set: { updatedAt: Date.now() }
-      },
-      { returnDocument: 'after' }
-    )
-  return res || null
-}
-
 const existById = async (id) => {
   return await GET_DB()
     .collection(COLLECTION_NAME)
     .findOne({ _id: new ObjectId(id) })
+}
+
+const update = async (boardId, { pushData = {}, setData = {} }) => {
+  const sanitizedSetData = Object.fromEntries(
+    Object.entries(setData).filter(
+      ([key]) => !INVALID_UPDATE_FIELDS.includes(key)
+    )
+  )
+  const updateOperation = {}
+  if (Object.keys(setData).length > 0) {
+    updateOperation.$set = { ...sanitizedSetData }
+  }
+
+  if (Object.keys(pushData).length > 0) {
+    updateOperation.$push = { ...pushData }
+  }
+  if (Object.entries(updateOperation).length === 0) return null
+  updateOperation.$set = {
+    ...(updateOperation.$set || {}),
+    updatedAt: Date.now()
+  }
+  const res = await GET_DB()
+    .collection(COLLECTION_NAME)
+    .findOneAndUpdate({ _id: new ObjectId(boardId) }, updateOperation, {
+      returnDocument: 'after'
+    })
+
+  return res || null
 }
 
 export default {
@@ -94,5 +109,5 @@ export default {
   create,
   find,
   existById,
-  addColumnOrderIds
+  update
 }

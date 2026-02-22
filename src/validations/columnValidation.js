@@ -3,7 +3,7 @@ import Joi from 'joi'
 import ApiError from '~/utils/ApiError'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 
-const createNew = async (req, res, next) => {
+const create = async (req, res, next) => {
   const correctCondition = Joi.object({
     boardId: Joi.string()
       .required()
@@ -23,6 +23,31 @@ const createNew = async (req, res, next) => {
   }
 }
 
+const update = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    title: Joi.string().min(3).max(100).trim().strict(),
+    cardOrderIds: Joi.array()
+      .items(
+        Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+      )
+      .default([])
+  })
+  try {
+    await correctCondition.validateAsync(req.body, {
+      abortEarly: false,
+      allowUnknown: true
+    })
+    next()
+  } catch (err) {
+    const customError = new ApiError(
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      err.message
+    )
+    next(customError)
+  }
+}
+
 export const columnValidation = {
-  createNew
+  create,
+  update
 }
