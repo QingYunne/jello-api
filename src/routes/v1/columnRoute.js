@@ -6,13 +6,12 @@ import { columnValidation } from '~/validations/columnValidation'
 const Router = express.Router()
 
 Router.route('/').post(
-  columnValidation.create, // validation method was named create, not createNew
+  columnValidation.create,
   asyncHandler(columnController.createColumn)
 )
 
-// add update route with validation and controller
 Router.route('/:id').patch(
-  columnValidation.update,
+  asyncHandler(columnValidation.update),
   asyncHandler(columnController.updateColumn)
 )
 

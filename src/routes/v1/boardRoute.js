@@ -10,10 +10,16 @@ Router.route('/')
   .get((req, res) => {
     res.status(StatusCodes.OK).json({ message: 'GET: API get list board' })
   })
-  .post(boardValidation.createNew, asyncHandler(boardController.createBoard))
+  .post(
+    asyncHandler(boardValidation.create),
+    asyncHandler(boardController.createBoard)
+  )
 
 Router.route('/:id')
   .get(asyncHandler(boardController.getBoard))
-  .patch(asyncHandler(boardController.updateBoard))
+  .patch(
+    asyncHandler(boardValidation.update),
+    asyncHandler(boardController.updateBoard)
+  )
 
 export const boardRoute = Router
