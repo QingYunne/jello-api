@@ -6,8 +6,9 @@ import { cardValidation } from '~/validations/cardValidation'
 const Router = express.Router()
 
 Router.route('/').post(
-  cardValidation.createNew,
+  asyncHandler(cardValidation.create),
   asyncHandler(cardController.createCard)
 )
+Router.route('/:id/move').patch(asyncHandler(cardValidation.moveCardToDiffColumn), asyncHandler(cardController.moveCardToDiffColumn))
 
 export const cardRoute = Router
