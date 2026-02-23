@@ -75,7 +75,10 @@ const existById = async (id) => {
     .findOne({ _id: new ObjectId(id) })
 }
 
-const update = async (boardId, { pushData = {}, setData = {} }) => {
+const update = async (
+  boardId,
+  { pushData = {}, setData = {}, pullData = {} }
+) => {
   const sanitizedSetData = Object.fromEntries(
     Object.entries(setData).filter(
       ([key]) => !INVALID_UPDATE_FIELDS.includes(key)
@@ -89,7 +92,11 @@ const update = async (boardId, { pushData = {}, setData = {} }) => {
   if (Object.keys(pushData).length > 0) {
     updateOperation.$push = { ...pushData }
   }
-  if (Object.entries(updateOperation).length === 0) return null
+  if (Object.keys(pullData).length > 0) {
+    updateOperation.$pull = { ...pullData }
+  }
+
+  if (Object.keys(updateOperation).length === 0) return null
   updateOperation.$set = {
     ...(updateOperation.$set || {}),
     updatedAt: Date.now()

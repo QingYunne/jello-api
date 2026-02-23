@@ -78,4 +78,15 @@ const existById = async (id) => {
     .findOne({ _id: new ObjectId(id) })
 }
 
-export default { COLLECTION_NAME, COLLECTION_SCHEMA, create, existById, update }
+const deleteMany = async (filter) => {
+  return await GET_DB().collection(COLLECTION_NAME).deleteMany(filter)
+}
+
+export default {
+  COLLECTION_NAME,
+  COLLECTION_SCHEMA,
+  create,
+  existById,
+  update,
+  deleteMany
+}

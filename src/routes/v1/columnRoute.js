@@ -10,9 +10,14 @@ Router.route('/').post(
   asyncHandler(columnController.createColumn)
 )
 
-Router.route('/:id').patch(
-  asyncHandler(columnValidation.update),
-  asyncHandler(columnController.updateColumn)
-)
+Router.route('/:id')
+  .patch(
+    asyncHandler(columnValidation.update),
+    asyncHandler(columnController.updateColumn)
+  )
+  .delete(
+    asyncHandler(columnValidation.deleteItem),
+    asyncHandler(columnController.deleteColumn)
+  )
 
 export const columnRoute = Router

@@ -5,6 +5,7 @@ import ApiError from '~/utils/ApiError'
 import { slugify } from '~/utils/formatters'
 import { boardService } from './boardService'
 import { ObjectId } from 'mongodb'
+import { cardService } from './cardService'
 
 const createColumn = async (column) => {
   const foundBoard = await boardModel.existById(column.boardId)
@@ -37,7 +38,39 @@ const updateColumn = async (columnId, data) => {
   return await columnModel.update(columnId, { pushData, setData })
 }
 
+const deleteColumn = async (columnId) => {
+  const foundColumn = await columnModel.existById(columnId)
+  if (!foundColumn)
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Column not found')
+  const deletedColumn = await columnModel.deleteById(columnId)
+  if (deletedColumn.deletedCount === 0) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to delete column'
+    )
+  }
+  const deletedCards = await cardService.deleteManyByColumnId(columnId)
+  if (!deletedCards || deletedCards.deletedCount === 0) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to delete cards in column'
+    )
+  }
+  const updatedBoard = await boardService.pullColumnOrderIds(
+    foundColumn.boardId,
+    columnId
+  )
+  if (!updatedBoard) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to remove column from board'
+    )
+  }
+  return { deleteResult: 'Column and its cards deleted successfully' }
+}
+
 export const columnService = {
   createColumn,
-  updateColumn
+  updateColumn,
+  deleteColumn
 }
