@@ -89,11 +89,18 @@ const update = async (
   return res || null
 }
 
+const deleteById = async (id) => {
+  return await GET_DB()
+    .collection(COLLECTION_NAME)
+    .deleteOne({ _id: new ObjectId(id) })
+}
+
 export default {
   COLLECTION_NAME,
   COLLECTION_SCHEMA,
   create,
   existById,
   addCardOrderIds,
-  update
+  update,
+  deleteById
 }

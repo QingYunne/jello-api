@@ -54,7 +54,12 @@ const moveCardToDiffColumn = async (cardId, data) => {
   }
 }
 
+const deleteManyByColumnId = async (columnId) => {
+  return await cardModel.deleteMany({ columnId: new ObjectId(columnId) })
+}
+
 export const cardService = {
   createCard,
-  moveCardToDiffColumn
+  moveCardToDiffColumn,
+  deleteManyByColumnId
 }

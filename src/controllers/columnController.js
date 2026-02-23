@@ -12,7 +12,14 @@ const updateColumn = async (req, res, next) => {
   res.status(StatusCodes.OK).json(updatedColumn)
 }
 
+const deleteColumn = async (req, res, next) => {
+  const columnId = req.params.id
+  const deletedRes = await columnService.deleteColumn(columnId)
+  res.status(StatusCodes.OK).json(deletedRes)
+}
+
 export const columnController = {
   createColumn,
-  updateColumn
+  updateColumn,
+  deleteColumn
 }
