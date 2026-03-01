@@ -50,12 +50,6 @@ const deleteColumn = async (columnId) => {
     )
   }
   const deletedCards = await cardService.deleteManyByColumnId(columnId)
-  if (!deletedCards || deletedCards.deletedCount === 0) {
-    throw new ApiError(
-      StatusCodes.INTERNAL_SERVER_ERROR,
-      'Failed to delete cards in column'
-    )
-  }
   const updatedBoard = await boardService.pullColumnOrderIds(
     foundColumn.boardId,
     columnId
