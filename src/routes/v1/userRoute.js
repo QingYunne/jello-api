@@ -20,4 +20,8 @@ Router.route('/login').post(
   asyncHandler(userController.loginUser)
 )
 
+Router.route('/logout').post(asyncHandler(userController.logout))
+
+Router.route('/refresh_token').get(asyncHandler(userController.refreshToken))
+
 export const userRouter = Router

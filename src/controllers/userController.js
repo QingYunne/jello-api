@@ -32,4 +32,35 @@ const loginUser = async (req, res, next) => {
   res.status(StatusCodes.OK).json(userInfo)
 }
 
-export const userController = { registerUser, verifyUser, loginUser }
+const logout = async (req, res, next) => {
+  res.clearCookie('accessToken')
+  res.clearCookie('refreshToken')
+
+  res.status(StatusCodes.OK).json({ logout: true })
+}
+
+const refreshToken = async (req, res, next) => {
+  const refreshToken = req.cookies?.refreshToken
+  const tokens = await userService.refreshToken(refreshToken)
+  res.cookie('accessToken', tokens.accessToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: ms('14d')
+  })
+  res.cookie('refreshToken', tokens.refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: ms('14d')
+  })
+  res.status(StatusCodes.OK).json({ refreshToken: true })
+}
+
+export const userController = {
+  registerUser,
+  verifyUser,
+  loginUser,
+  logout,
+  refreshToken
+}

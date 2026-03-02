@@ -7,6 +7,8 @@ import ApiError from '~/utils/ApiError'
 import { WEBSITE_DOMAIN } from '~/utils/constants'
 import { getInfoData } from '~/utils/formatters'
 import { createTokenPair } from '~/helpers/auth'
+import { JwtProvider } from '~/providers/JwtProvider'
+import { env } from '~/config/environment'
 
 const FIELD_USER_RETURN = [
   '_id',
@@ -102,8 +104,24 @@ const login = async ({ email, password }) => {
   }
 }
 
+const refreshToken = async (refreshToken) => {
+  try {
+    const decoded = await JwtProvider.verifyToken(
+      refreshToken,
+      env.REFRESH_TOKEN_SECRET_KEY
+    )
+
+    const { _id, email } = decoded
+
+    return await createTokenPair({ _id, email })
+  } catch (error) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Please login!')
+  }
+}
+
 export const userService = {
   register,
   verify,
-  login
+  login,
+  refreshToken
 }
