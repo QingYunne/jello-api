@@ -7,4 +7,16 @@ const registerUser = async (req, res, next) => {
   return res.status(StatusCodes.CREATED).json(createdUser)
 }
 
-export const userController = { registerUser }
+const verifyUser = async (req, res, next) => {
+  const { email, token } = req.body
+  const userInfo = await userService.verify({ email, token })
+  return res.status(StatusCodes.OK).json(userInfo)
+}
+
+const loginUser = async (req, res, next) => {
+  const { email, password } = req.body
+  const userInfo = await userService.login({ email, password })
+  res.status(StatusCodes.OK).json(userInfo)
+}
+
+export const userController = { registerUser, verifyUser, loginUser }

@@ -31,6 +31,52 @@ const create = async (req, res, next) => {
   }
 }
 
+export const verify = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    email: Joi.string()
+      .required()
+      .pattern(EMAIL_RULE)
+      .message(EMAIL_RULE_MESSAGE),
+    token: Joi.string().required()
+  })
+  try {
+    await correctCondition.validateAsync(req.body, { abortEarly: false })
+    next()
+  } catch (err) {
+    const customError = new ApiError(
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      err.message
+    )
+    next(customError)
+  }
+}
+
+const login = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    email: Joi.string()
+      .required()
+      .pattern(EMAIL_RULE)
+      .message(EMAIL_RULE_MESSAGE),
+    password: Joi.string()
+      .required()
+      .pattern(PASSWORD_RULE)
+      .message(PASSWORD_RULE_MESSAGE)
+  })
+
+  try {
+    await correctCondition.validateAsync(req.body, { abortEarly: false })
+    next()
+  } catch (err) {
+    const customError = new ApiError(
+      StatusCodes.UNPROCESSABLE_ENTITY,
+      err.message
+    )
+    next(customError)
+  }
+}
+
 export const userValidation = {
-  create
+  create,
+  verify,
+  login
 }

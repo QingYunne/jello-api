@@ -63,30 +63,18 @@ const findOneByEmail = async (email) => {
   return await GET_DB().collection(COLLECTION_NAME).findOne({ email })
 }
 
-const update = async (id, { pushData = {}, setData = {}, pullData = {} }) => {
-  const sanitizedSetData = Object.fromEntries(
-    Object.entries(setData).filter(
-      ([key]) => !INVALID_UPDATE_FIELDS.includes(key)
-    )
+const update = async (id, data) => {
+  const sanitizedData = Object.fromEntries(
+    Object.entries(data).filter(([key]) => !INVALID_UPDATE_FIELDS.includes(key))
   )
-  const updateOperation = {}
-  if (Object.keys(setData).length > 0) {
-    updateOperation.$set = { ...sanitizedSetData }
-  }
 
-  if (Object.keys(pushData).length > 0) {
-    updateOperation.$push = { ...pushData }
-  }
-  if (Object.keys(updateOperation).length === 0) return null
-  updateOperation.$set = {
-    ...(updateOperation.$set || {}),
-    updatedAt: Date.now()
-  }
   const res = await GET_DB()
     .collection(COLLECTION_NAME)
-    .findOneAndUpdate({ _id: new Object(id) }, updateOperation, {
-      returnDocument: 'after'
-    })
+    .findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: sanitizedData },
+      { returnDocument: 'after' }
+    )
 
   return res || null
 }
