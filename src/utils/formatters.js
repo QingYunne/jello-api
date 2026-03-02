@@ -1,3 +1,5 @@
+import _ from 'lodash'
+
 export const slugify = (val) => {
   if (!val) return ''
   return String(val)
@@ -8,4 +10,8 @@ export const slugify = (val) => {
     .replace(/[^a-z0-9 -]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+}
+
+export const getInfoData = ({ fields = [], object = {} }) => {
+  return _.pick(object, fields)
 }
