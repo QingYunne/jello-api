@@ -6,7 +6,7 @@
 .pnp.js
 .pnp.cjs
 .yarn/
-yarn.lock
+.vscode/
 
 # binaries
 acli

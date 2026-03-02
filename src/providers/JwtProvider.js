@@ -32,11 +32,13 @@ const verifyToken = (token, privateKey) => {
     JWT.verify(token, privateKey, (error, decoded) => {
       if (error) {
         if (error.name === 'TokenExpiredError') {
-          reject(new Error('Token has expired'))
+          reject(new ApiError(StatusCodes.GONE, 'Token has expired'))
         } else if (error.name === 'JsonWebTokenError') {
-          reject(new Error('Invalid token'))
+          reject(new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid token'))
         } else if (error.name === 'NotBeforeError') {
-          reject(new Error('Token is not active yet'))
+          reject(
+            new ApiError(StatusCodes.UNAUTHORIZED, 'Token is not active yet')
+          )
         } else {
           reject(error)
         }
