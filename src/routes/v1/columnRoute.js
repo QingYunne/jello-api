@@ -1,9 +1,12 @@
 import express from 'express'
 import { columnController } from '~/controllers/columnController'
 import { asyncHandler } from '~/helpers/asyncHandler'
+import { authMiddleware } from '~/middlewares/authMiddleware'
 import { columnValidation } from '~/validations/columnValidation'
 
 const Router = express.Router()
+
+Router.use(asyncHandler(authMiddleware.isAuthorized))
 
 Router.route('/').post(
   columnValidation.create,

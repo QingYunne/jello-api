@@ -14,5 +14,12 @@ export const errorHandlingMiddleware = (err, req, res, next) => {
 
   if (env.BUILD_MODE !== 'dev') delete responseError.stack
 
+  // Set headers BEFORE sending the response
+  res.set({
+    'Cache-Control': 'no-store',
+    Pragma: 'no-cache',
+    Expires: '0'
+  })
+
   res.status(responseError.statusCode).json(responseError)
 }

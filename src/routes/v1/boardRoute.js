@@ -2,9 +2,12 @@ import express from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { boardController } from '~/controllers/boardController'
 import { asyncHandler } from '~/helpers/asyncHandler'
+import { authMiddleware } from '~/middlewares/authMiddleware'
 import { boardValidation } from '~/validations/boardValidation'
 
 const Router = express.Router()
+
+Router.use(asyncHandler(authMiddleware.isAuthorized))
 
 Router.route('/')
   .get((req, res) => {
