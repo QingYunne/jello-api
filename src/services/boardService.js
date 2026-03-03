@@ -54,6 +54,7 @@ const pullColumnOrderIds = async (boardId, columnId) => {
   return await boardModel.update(boardId, { pullData: data })
 }
 
+
 export const boardService = {
   createBoard,
   getBoard,

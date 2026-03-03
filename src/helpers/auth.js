@@ -1,5 +1,8 @@
 import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/config/environment'
+import bcryptjs from 'bcryptjs'
+
+const SALT = 8
 
 const {
   ACCESS_TOKEN_SECRET_KEY,
@@ -26,4 +29,12 @@ export const createTokenPair = async (payload) => {
     accessToken,
     refreshToken
   }
+}
+
+export const hashPassword = (password) => {
+  return bcryptjs.hashSync(password, SALT)
+}
+
+export const comparePassword = (string, hash) => {
+  return bcryptjs.compareSync(string, hash)
 }

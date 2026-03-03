@@ -1,6 +1,7 @@
 import express from 'express'
 import { userController } from '~/controllers/userController'
 import { asyncHandler } from '~/helpers/asyncHandler'
+import { authMiddleware } from '~/middlewares/authMiddleware'
 import { userValidation } from '~/validations/userValidation'
 
 const Router = express.Router()
@@ -23,5 +24,12 @@ Router.route('/login').post(
 Router.route('/logout').post(asyncHandler(userController.logout))
 
 Router.route('/refresh_token').get(asyncHandler(userController.refreshToken))
+
+Router.use(asyncHandler(authMiddleware.isAuthorized))
+
+Router.route('').patch(
+  asyncHandler(userValidation.update),
+  asyncHandler(userController.updateUser)
+)
 
 export const userRouter = Router
