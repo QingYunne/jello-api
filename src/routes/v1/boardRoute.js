@@ -10,9 +10,7 @@ const Router = express.Router()
 Router.use(asyncHandler(authMiddleware.isAuthorized))
 
 Router.route('/')
-  .get((req, res) => {
-    res.status(StatusCodes.OK).json({ message: 'GET: API get list board' })
-  })
+  .get(asyncHandler(boardController.getAllBoards))
   .post(
     asyncHandler(boardValidation.create),
     asyncHandler(boardController.createBoard)

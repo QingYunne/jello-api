@@ -12,6 +12,13 @@ const getBoard = async (req, res, next) => {
   res.status(StatusCodes.OK).json(board)
 }
 
+const getAllBoards = async (req, res, next) => {
+  const userId = req.jwtDecoded._id
+  const { page, limit } = req.query
+  const boards = await boardService.getAllBoards(userId, page, limit)
+  res.status(StatusCodes.OK).json(boards)
+}
+
 const updateBoard = async (req, res, next) => {
   const boardId = req.params.id
   const updatedBoard = await boardService.updateBoard(boardId, req.body)
@@ -21,5 +28,6 @@ const updateBoard = async (req, res, next) => {
 export const boardController = {
   createBoard,
   getBoard,
+  getAllBoards,
   updateBoard
 }

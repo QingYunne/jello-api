@@ -1,11 +1,12 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { BOARD_TYPE } from '~/utils/constants'
-import columnModel from '~/models/columnModel'
+import { commonFields } from '~/helpers'
 import cardModel from '~/models/cardModel'
+import columnModel from '~/models/columnModel'
+import { pagingSkipValue } from '~/utils/algorithms'
+import { BOARD_TYPE } from '~/utils/constants'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
-import { commonFields, updateTimestamps } from '~/helpers'
 
 const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 const COLLECTION_NAME = 'boards'
@@ -16,6 +17,12 @@ const COLLECTION_SCHEMA = Joi.object({
   description: Joi.string().required().min(3).max(255).trim().strict(),
   type: Joi.string().valid(BOARD_TYPE.PUBLIC, BOARD_TYPE.PRIVATE).required(),
   columnOrderIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
+  ownerIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
+  memberIds: Joi.array()
     .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
     .default([]),
   ...commonFields
@@ -110,11 +117,51 @@ const update = async (
   return res || null
 }
 
+const findAll = async (userId, page, limit) => {
+  const filter = [
+    { _destroy: false },
+    {
+      $or: [
+        { ownerIds: { $all: [new ObjectId(userId)] } },
+        { memberIds: { $all: [new ObjectId(userId)] } }
+      ]
+    }
+  ]
+
+  const query = await GET_DB()
+    .collection(COLLECTION_NAME)
+    .aggregate(
+      [
+        { $match: { $and: filter } },
+        { $sort: { title: 1 } },
+        {
+          $facet: {
+            //thread1: query board
+            queryBoards: [
+              { $skip: pagingSkipValue(page, limit) },
+              { $limit: limit }
+            ],
+            //thread2: query total of boards
+            queryCount: [{ $count: 'total' }]
+          }
+        }
+      ],
+      { collation: { locale: 'en' } }
+    )
+    .toArray()
+  const res = query[0]
+  return {
+    boards: res.queryBoards,
+    total: res.queryCount[0]?.total || 0
+  }
+}
+
 export default {
   COLLECTION_NAME,
   COLLECTION_SCHEMA,
   create,
   find,
+  findAll,
   existById,
   update
 }

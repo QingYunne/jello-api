@@ -1,7 +1,7 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { commonFields } from '~/helpers'
+import { commonFields, updateTimestamps } from '~/helpers'
 import {
   EMAIL_RULE,
   EMAIL_RULE_MESSAGE,
@@ -79,7 +79,7 @@ const update = async (id, data) => {
     .collection(COLLECTION_NAME)
     .findOneAndUpdate(
       { _id: new ObjectId(id) },
-      { $set: sanitizedData },
+      { $set: updateTimestamps(sanitizedData) },
       { returnDocument: 'after' }
     )
 

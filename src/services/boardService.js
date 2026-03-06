@@ -4,6 +4,9 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 
+export const DEFAULT_PAGE = '1'
+export const DEFAULT_LIMIT = '12'
+
 const createBoard = async (board) => {
   const newBoard = { ...board, slug: slugify(board.title) }
   return await boardModel.create(newBoard)
@@ -31,6 +34,18 @@ const getBoard = async (boardId) => {
   return board
 }
 
+const getAllBoards = async (
+  userId,
+  page = DEFAULT_PAGE,
+  limit = DEFAULT_LIMIT
+) => {
+  return await boardModel.findAll(
+    userId,
+    parseInt(page, 10),
+    parseInt(limit, 10)
+  )
+}
+
 const updateBoard = async (boardId, data) => {
   const pushData = {}
   const setData = {}
@@ -54,10 +69,10 @@ const pullColumnOrderIds = async (boardId, columnId) => {
   return await boardModel.update(boardId, { pullData: data })
 }
 
-
 export const boardService = {
   createBoard,
   getBoard,
+  getAllBoards,
   updateBoard,
   pushColumnOrderIds,
   pullColumnOrderIds
