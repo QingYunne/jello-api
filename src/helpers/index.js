@@ -15,3 +15,9 @@ export const commonFields = {
 export const convertToObjectId = (id) => {
   if (ObjectId.isValid(id)) return new ObjectId(id)
 }
+
+export const randomImageName = () => {
+  const timestamp = Date.now()
+  const randomStr = Math.random().toString(36).substring(2, 8)
+  return `${timestamp}_${randomStr}.jpg`
+}

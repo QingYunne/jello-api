@@ -81,7 +81,7 @@ const update = async (req, res, next) => {
     current_password: Joi.string()
       .pattern(PASSWORD_RULE)
       .message(`current_password: ${PASSWORD_RULE_MESSAGE}`),
-    new_pasSword: Joi.string()
+    new_password: Joi.string()
       .pattern(PASSWORD_RULE)
       .message(`new_password: ${PASSWORD_RULE_MESSAGE}`)
   })

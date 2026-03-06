@@ -4,11 +4,14 @@ import { v4 as uuidv4 } from 'uuid'
 import userModel from '~/models/userModel'
 import { PROVIDER_TYPE, sendEmail } from '~/providers'
 import ApiError from '~/utils/ApiError'
-import { WEBSITE_DOMAIN } from '~/utils/constants'
+import { RESOURCE_TYPES, WEBSITE_DOMAIN } from '~/utils/constants'
 import { getInfoData } from '~/utils/formatters'
 import { comparePassword, createTokenPair, hashPassword } from '~/helpers/auth'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/config/environment'
+import { cloudinary, streamUpload } from '~/providers/CloudinaryProvider'
+import { uploadService } from './uploadService'
+import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
 
 const FIELD_USER_RETURN = [
   '_id',
@@ -100,7 +103,7 @@ const login = async ({ email, password }) => {
 
   return {
     ...tokens,
-    ...getInfoData({ fields: FIELD_USER_RETURN, object: foundUser })
+    ...getUserWithAvatarUrl(foundUser)
   }
 }
 
@@ -132,10 +135,22 @@ const update = async (userId, data) => {
       data.current_password,
       data.new_password
     )
+  } else if (data.avatar) {
+    const uploadResult = await uploadService.uploadFile(
+      data.avatar,
+      UPLOAD_TYPE_KEY.AVATAR,
+      { userId }
+    )
+    if (foundUser.avatar)
+      await uploadService.deleteOldFile(foundUser.avatar, RESOURCE_TYPES.IMAGE)
+
+    updatedUser = await userModel.update(foundUser._id, {
+      avatar: uploadResult.publicId
+    })
   } else {
     updatedUser = await userModel.update(foundUser._id, data)
   }
-  return getInfoData({ fields: FIELD_USER_RETURN, object: updatedUser })
+  return getUserWithAvatarUrl(updatedUser)
 }
 
 const changePassword = async (user, currentPassword, newPassword) => {
@@ -146,6 +161,18 @@ const changePassword = async (user, currentPassword, newPassword) => {
     )
   const inputData = { password: hashPassword(newPassword) }
   return await userModel.update(user._id, inputData)
+}
+
+const getUserWithAvatarUrl = (user) => {
+  const result = getInfoData({ fields: FIELD_USER_RETURN, object: user })
+  if (user?.avatar) {
+    const avatarUrls = uploadService.getTransformedUrls(
+      user.avatar,
+      UPLOAD_TYPE_KEY.AVATAR
+    )
+    result.avatarUrls = avatarUrls
+  }
+  return result
 }
 
 export const userService = {

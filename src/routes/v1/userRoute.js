@@ -2,6 +2,10 @@ import express from 'express'
 import { userController } from '~/controllers/userController'
 import { asyncHandler } from '~/helpers/asyncHandler'
 import { authMiddleware } from '~/middlewares/authMiddleware'
+import {
+  handleMulterError,
+  uploadMiddleware
+} from '~/middlewares/multerUploadMiddleware'
 import { userValidation } from '~/validations/userValidation'
 
 const Router = express.Router()
@@ -29,6 +33,8 @@ Router.use(asyncHandler(authMiddleware.isAuthorized))
 
 Router.route('').patch(
   asyncHandler(userValidation.update),
+  asyncHandler(uploadMiddleware('AVATAR')),
+  handleMulterError,
   asyncHandler(userController.updateUser)
 )
 
