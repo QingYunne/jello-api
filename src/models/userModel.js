@@ -64,8 +64,15 @@ const findOneByEmail = async (email) => {
 }
 
 const update = async (id, data) => {
+  // drop any fields that are explicitly forbidden _and_ any values that
+  // are `undefined`.  mongoose/mongo drivers don't like being asked to set
+  // a key to undefined, which is exactly what was happening when the
+  // controller spread an undefined avatar buffer into an empty payload.
   const sanitizedData = Object.fromEntries(
-    Object.entries(data).filter(([key]) => !INVALID_UPDATE_FIELDS.includes(key))
+    Object.entries(data).filter(
+      ([key, value]) =>
+        !INVALID_UPDATE_FIELDS.includes(key) && value !== undefined
+    )
   )
 
   const res = await GET_DB()

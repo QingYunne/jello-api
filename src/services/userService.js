@@ -4,11 +4,14 @@ import { v4 as uuidv4 } from 'uuid'
 import userModel from '~/models/userModel'
 import { PROVIDER_TYPE, sendEmail } from '~/providers'
 import ApiError from '~/utils/ApiError'
-import { WEBSITE_DOMAIN } from '~/utils/constants'
+import { RESOURCE_TYPES, WEBSITE_DOMAIN } from '~/utils/constants'
 import { getInfoData } from '~/utils/formatters'
-import { createTokenPair } from '~/helpers/auth'
+import { comparePassword, createTokenPair, hashPassword } from '~/helpers/auth'
 import { JwtProvider } from '~/providers/JwtProvider'
 import { env } from '~/config/environment'
+import { cloudinary, streamUpload } from '~/providers/CloudinaryProvider'
+import { uploadService } from './uploadService'
+import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
 
 const FIELD_USER_RETURN = [
   '_id',
@@ -31,7 +34,7 @@ const register = async ({ email, password }) => {
   const username = email.split('@')[0]
   const userData = {
     email,
-    password: bcryptjs.hashSync(password, 8),
+    password: hashPassword(password),
     username,
     displayName: username,
     verifyToken: uuidv4()
@@ -85,7 +88,7 @@ const login = async ({ email, password }) => {
   if (!foundUser.isActive)
     throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your email is not active!')
 
-  if (!bcryptjs.compareSync(password, foundUser.password))
+  if (!comparePassword(password, foundUser.password))
     throw new ApiError(
       StatusCodes.NOT_ACCEPTABLE,
       'Your email or password is incorrect!'
@@ -100,7 +103,7 @@ const login = async ({ email, password }) => {
 
   return {
     ...tokens,
-    ...getInfoData({ fields: FIELD_USER_RETURN, object: foundUser })
+    ...getUserWithAvatarUrl(foundUser)
   }
 }
 
@@ -119,9 +122,63 @@ const refreshToken = async (refreshToken) => {
   }
 }
 
+const update = async (userId, data) => {
+  const foundUser = await userModel.existById(userId)
+  if (!foundUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
+  if (!foundUser.isActive)
+    throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your account is not active')
+
+  let updatedUser = {}
+  if (data.current_password && data.new_password) {
+    updatedUser = await changePassword(
+      foundUser,
+      data.current_password,
+      data.new_password
+    )
+  } else if (data.avatar) {
+    const uploadResult = await uploadService.uploadFile(
+      data.avatar,
+      UPLOAD_TYPE_KEY.AVATAR,
+      { userId }
+    )
+    if (foundUser.avatar)
+      await uploadService.deleteOldFile(foundUser.avatar, RESOURCE_TYPES.IMAGE)
+
+    updatedUser = await userModel.update(foundUser._id, {
+      avatar: uploadResult.publicId
+    })
+  } else {
+    updatedUser = await userModel.update(foundUser._id, data)
+  }
+  return getUserWithAvatarUrl(updatedUser)
+}
+
+const changePassword = async (user, currentPassword, newPassword) => {
+  if (!comparePassword(currentPassword, user.password))
+    throw new ApiError(
+      StatusCodes.NOT_ACCEPTABLE,
+      'Your current password is incorrect!'
+    )
+  const inputData = { password: hashPassword(newPassword) }
+  return await userModel.update(user._id, inputData)
+}
+
+const getUserWithAvatarUrl = (user) => {
+  const result = getInfoData({ fields: FIELD_USER_RETURN, object: user })
+  if (user?.avatar) {
+    const avatarUrls = uploadService.getTransformedUrls(
+      user.avatar,
+      UPLOAD_TYPE_KEY.AVATAR
+    )
+    result.avatarUrls = avatarUrls
+  }
+  return result
+}
+
 export const userService = {
   register,
   verify,
   login,
-  refreshToken
+  refreshToken,
+  update
 }

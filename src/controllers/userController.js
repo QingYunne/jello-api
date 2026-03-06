@@ -57,10 +57,30 @@ const refreshToken = async (req, res, next) => {
   res.status(StatusCodes.OK).json({ refreshToken: true })
 }
 
+const updateUser = async (req, res, next) => {
+  const userId = req.jwtDecoded._id
+
+  // debug information to see what multer produced
+  // console.log('[userController] headers:', req.headers)
+  // console.log('[userController] body:', req.body)
+  // console.log('[userController] file:', req.file)
+
+  // obtain buffer from multer's req.file, not from req.avatar
+  const avatarBuffer = req.file?.buffer
+  const payload = { ...req.body }
+  if (avatarBuffer) {
+    payload.avatar = avatarBuffer
+  }
+
+  const updatedUser = await userService.update(userId, payload)
+  res.status(StatusCodes.OK).json(updatedUser)
+}
+
 export const userController = {
   registerUser,
   verifyUser,
   loginUser,
   logout,
-  refreshToken
+  refreshToken,
+  updateUser
 }
