@@ -1,4 +1,4 @@
-import Joi from 'joi'
+import Joi, { valid } from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { commonFields } from '~/helpers'
@@ -32,16 +32,29 @@ const validate = async (data) => {
   return await COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
-const create = async (board) => {
+const create = async (userId, board) => {
   const validBoard = await validate(board)
-  const res = await GET_DB().collection(COLLECTION_NAME).insertOne(validBoard)
+  const boardWithOwner = { ...validBoard, ownerIds: [new ObjectId(userId)] }
+  const res = await GET_DB()
+    .collection(COLLECTION_NAME)
+    .insertOne(boardWithOwner)
   return {
     ...validBoard,
     _id: res.insertedId.toString()
   }
 }
 
-const find = async (boardId) => {
+const find = async (userId, boardId) => {
+  const filter = [
+    { _id: new ObjectId(boardId) },
+    { _destroy: false },
+    {
+      $or: [
+        { ownerIds: { $all: [new ObjectId(userId)] } },
+        { memberIds: { $all: [new ObjectId(userId)] } }
+      ]
+    }
+  ]
   // const res = await GET_DB()
   //   .collection(COLLECTION_NAME)
   //   .findOne({ _id: new ObjectId(boardId) })
@@ -49,10 +62,7 @@ const find = async (boardId) => {
     .collection(COLLECTION_NAME)
     .aggregate([
       {
-        $match: {
-          _id: new ObjectId(boardId),
-          _destroy: false
-        }
+        $match: { $and: filter }
       },
       {
         $lookup: {

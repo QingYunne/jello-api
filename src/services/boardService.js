@@ -7,13 +7,13 @@ import { ObjectId } from 'mongodb'
 export const DEFAULT_PAGE = '1'
 export const DEFAULT_LIMIT = '12'
 
-const createBoard = async (board) => {
+const createBoard = async (userId, board) => {
   const newBoard = { ...board, slug: slugify(board.title) }
-  return await boardModel.create(newBoard)
+  return await boardModel.create(userId, newBoard)
 }
 
-const getBoard = async (boardId) => {
-  const board = await boardModel.find(boardId)
+const getBoard = async (userId, boardId) => {
+  const board = await boardModel.find(userId, boardId)
   if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found')
 
   const cardsByColumn = {}

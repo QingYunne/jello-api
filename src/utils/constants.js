@@ -7,7 +7,7 @@ export const WHITELIST_DOMAINS = [
 
 export const BOARD_TYPE = {
   PUBLIC: 'public',
-  PRIVATE: 'public'
+  PRIVATE: 'private'
 }
 
 export const WEBSITE_DOMAIN =
