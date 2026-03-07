@@ -16,6 +16,7 @@ const USER_ROLES = {
 
 const COLLECTION_NAME = 'users'
 const INVALID_UPDATE_FIELDS = ['_id', 'email', 'username', 'createdAt']
+const VALID_OTHER_GET_FIELDS = ['username', 'displayName', 'avatar']
 
 const COLLECTION_SCHEMA = Joi.object({
   email: Joi.string()
@@ -64,10 +65,6 @@ const findOneByEmail = async (email) => {
 }
 
 const update = async (id, data) => {
-  // drop any fields that are explicitly forbidden _and_ any values that
-  // are `undefined`.  mongoose/mongo drivers don't like being asked to set
-  // a key to undefined, which is exactly what was happening when the
-  // controller spread an undefined avatar buffer into an empty payload.
   const sanitizedData = Object.fromEntries(
     Object.entries(data).filter(
       ([key, value]) =>
@@ -92,5 +89,6 @@ export default {
   existById,
   create,
   update,
-  findOneByEmail
+  findOneByEmail,
+  VALID_OTHER_GET_FIELDS
 }

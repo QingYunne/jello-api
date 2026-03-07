@@ -3,6 +3,8 @@ import boardModel from '~/models/boardModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { cardService } from './cardService'
+import { userService } from './userService'
 
 export const DEFAULT_PAGE = '1'
 export const DEFAULT_LIMIT = '12'
@@ -22,13 +24,20 @@ const getBoard = async (userId, boardId) => {
     if (!cardsByColumn[columnId]) {
       cardsByColumn[columnId] = []
     }
-    cardsByColumn[columnId].push(card)
+    cardsByColumn[columnId].push(cardService.getCardWithCover(card))
   })
 
   board.columns.forEach((column) => {
     const columnId = column._id.toString()
     column.cards = cardsByColumn[columnId] || []
   })
+
+  board.owners = board.owners?.map((owner) =>
+    userService.getUserWithAvatarUrl(owner)
+  )
+  board.members = board.members?.map((member) =>
+    userService.getUserWithAvatarUrl(member)
+  )
 
   delete board.cards
   return board

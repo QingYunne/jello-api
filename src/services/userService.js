@@ -180,5 +180,6 @@ export const userService = {
   verify,
   login,
   refreshToken,
-  update
+  update,
+  getUserWithAvatarUrl
 }

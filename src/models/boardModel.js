@@ -1,12 +1,13 @@
-import Joi, { valid } from 'joi'
+import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { commonFields } from '~/helpers'
+import { commonFields, getSelectedFields } from '~/helpers'
 import cardModel from '~/models/cardModel'
 import columnModel from '~/models/columnModel'
 import { pagingSkipValue } from '~/utils/algorithms'
 import { BOARD_TYPE } from '~/utils/constants'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import userModel from './userModel'
 
 const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 const COLLECTION_NAME = 'boards'
@@ -78,6 +79,28 @@ const find = async (userId, boardId) => {
           localField: '_id',
           foreignField: 'boardId',
           as: 'cards'
+        }
+      },
+      {
+        $lookup: {
+          from: userModel.COLLECTION_NAME,
+          localField: 'ownerIds',
+          foreignField: '_id',
+          as: 'owners',
+          pipeline: [
+            { $project: getSelectedFields(userModel.VALID_OTHER_GET_FIELDS) }
+          ]
+        }
+      },
+      {
+        $lookup: {
+          from: userModel.COLLECTION_NAME,
+          localField: 'memberIds',
+          foreignField: '_id',
+          as: 'members',
+          pipeline: [
+            { $project: getSelectedFields(userModel.VALID_OTHER_GET_FIELDS) }
+          ]
         }
       }
     ])

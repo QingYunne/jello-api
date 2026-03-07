@@ -21,14 +21,19 @@ const uploadFile = async (fileBuffer, strategyType, context = {}) => {
     })
 
     if (!Buffer.isBuffer(fileBuffer)) {
-      throw new Error(`Invalid file buffer. Expected Buffer, got ${typeof fileBuffer}`)
+      throw new Error(
+        `Invalid file buffer. Expected Buffer, got ${typeof fileBuffer}`
+      )
     }
 
     if (fileBuffer.length === 0) {
       throw new Error('Empty file buffer')
     }
 
-    const publicId = strategy.generatePublicId?.(context.userId) || undefined
+    const publicId =
+      strategy.generatePublicId?.(context.userId) ||
+      strategy.publicId() ||
+      undefined
 
     const result = await streamUpload(fileBuffer, {
       folder: strategy.folder,

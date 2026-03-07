@@ -19,5 +19,13 @@ export const convertToObjectId = (id) => {
 export const randomImageName = () => {
   const timestamp = Date.now()
   const randomStr = Math.random().toString(36).substring(2, 8)
-  return `${timestamp}_${randomStr}.jpg`
+  return `${timestamp}_${randomStr}`
+}
+
+export const getSelectedFields = (fields = []) => {
+  const selectedFields = {}
+  fields.forEach((field) => {
+    selectedFields[field] = 1
+  })
+  return selectedFields
 }

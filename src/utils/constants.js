@@ -27,12 +27,13 @@ export const ALLOWED_MIME_TYPES = {
     'text/plain'
   ],
   get ALL() {
-    return [...this.IMAGES, ...this.VIDEOS, ...this.DOCUMENTS]
+    return [...this.IMAGE, ...this.VIDEO, ...this.DOCUMENT]
   }
 }
 
 export const CLOUDINARY_FOLDERS = {
-  USER_AVATARS: 'clone-jello/user-avatars'
+  USER_AVATARS: 'clone-jello/user-avatars',
+  CARD_COVER: 'clone-jello/card-covers'
 }
 
 export const CROP_MODES = {
@@ -59,8 +60,8 @@ export const RESOURCE_TYPES = {
 }
 
 export const FILE_SIZE_LIMITS = {
-  AVATAR: 10 * 1024 * 1024
-  // COVER: 5 * 1024 * 1024,
+  AVATAR: 10 * 1024 * 1024,
+  CARD_COVER: 10 * 1024 * 1024
   // PRODUCT: 10 * 1024 * 1024,
   // VIDEO: 100 * 1024 * 1024
 }
@@ -79,8 +80,26 @@ export const IMAGE_TRANSFORM_PRESETS = {
     quality: QUALITY_PRESETS.MEDIUM
   },
   AVATAR_LARGE: {
-    width: 150,
-    height: 150,
+    width: 300,
+    height: 300,
+    crop: CROP_MODES.FILL,
+    quality: QUALITY_PRESETS.HIGH
+  },
+  CARD_COVER_SMALL: {
+    width: 280,
+    height: 140,
+    crop: CROP_MODES.FILL,
+    quality: QUALITY_PRESETS.MEDIUM
+  },
+  CARD_COVER_MEDIUM: {
+    width: 280,
+    height: 140,
+    crop: CROP_MODES.FILL,
+    quality: QUALITY_PRESETS.MEDIUM
+  },
+  CARD_COVER_LARGE: {
+    width: 860,
+    height: 320,
     crop: CROP_MODES.FILL,
     quality: QUALITY_PRESETS.HIGH
   }
