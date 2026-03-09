@@ -27,6 +27,11 @@ Router.route('/:id/cover').put(
   handleMulterError,
   asyncHandler(cardController.uploadCardCover)
 )
+
+Router.route('/:id/comment').patch(
+  asyncHandler(cardValidation.update),
+  asyncHandler(cardController.addCommentToCard)
+)
 Router.route('/:id/move').patch(
   asyncHandler(cardValidation.moveCardToDiffColumn),
   asyncHandler(cardController.moveCardToDiffColumn)

@@ -1,3 +1,6 @@
+import Joi from 'joi'
+import { ObjectId } from 'mongodb'
+
 export const OBJECT_ID_RULE = /^[0-9a-fA-F]{24}$/
 export const OBJECT_ID_RULE_MESSAGE =
   'Your string fails to match the Object Id pattern!'
@@ -11,9 +14,26 @@ export const PASSWORD_RULE_MESSAGE =
 export const LIMIT_COMMON_FILE_SIZE = 10485760 // byte = 10 MB
 export const ALLOW_COMMON_FILE_TYPES = ['image/jpg', 'image/jpeg', 'image/png']
 
+export const JoiExtended = Joi.extend((joi) => ({
+  type: 'objectId',
+  base: joi
+    .alternatives()
+    .try(joi.string().pattern(OBJECT_ID_RULE), joi.object().instance(ObjectId)),
+  messages: {
+    'objectId.invalid': '{{#label}} must be a valid ObjectId'
+  },
+  coerce(value, helpers) {
+    if (typeof value === 'string') {
+      if (ObjectId.isValid(value)) {
+        return { value: new ObjectId(value) }
+      }
+      return { errors: [helpers.error('objectId.invalid')] }
+    }
 
+    if (value instanceof ObjectId) {
+      return { value }
+    }
 
-// export const isImageFile = (mimetype) => MIME_TYPES.IMAGES.includes(mimetype)
-// export const isVideoFile = (mimetype) => MIME_TYPES.VIDEOS.includes(mimetype)
-// export const isDocumentFile = (mimetype) =>
-//   MIME_TYPES.DOCUMENTS.includes(mimetype)
+    return { errors: [helpers.error('objectId.invalid')] }
+  }
+}))

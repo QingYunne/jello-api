@@ -19,6 +19,16 @@ const uploadCardCover = async (req, res) => {
   res.status(StatusCodes.OK).json(updatedCard)
 }
 
+const addCommentToCard = async (req, res) => {
+  const cardId = req.params.id
+  const userId = req.jwtDecoded._id
+  const updatedCard = await cardService.addCommentToCard(
+    cardId,
+    userId,
+    req.body?.commentToAdd
+  )
+  res.status(StatusCodes.OK).json(updatedCard)
+}
 const moveCardToDiffColumn = async (req, res) => {
   const { id } = req.params
   await cardService.moveCardToDiffColumn(id, req.body)
@@ -30,6 +40,7 @@ const moveCardToDiffColumn = async (req, res) => {
 export const cardController = {
   createCard,
   updateCard,
+  addCommentToCard,
   uploadCardCover,
   moveCardToDiffColumn
 }

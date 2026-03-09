@@ -8,15 +8,10 @@ import {
   PASSWORD_RULE,
   PASSWORD_RULE_MESSAGE
 } from '~/utils/validators'
-
-const USER_ROLES = {
-  CLIENT: 'client',
-  ADMIN: 'admin'
-}
+import { USER_ROLES } from '~/utils/constants'
 
 const COLLECTION_NAME = 'users'
 const INVALID_UPDATE_FIELDS = ['_id', 'email', 'username', 'createdAt']
-const VALID_OTHER_GET_FIELDS = ['username', 'displayName', 'avatar']
 
 const COLLECTION_SCHEMA = Joi.object({
   email: Joi.string()
@@ -32,7 +27,7 @@ const COLLECTION_SCHEMA = Joi.object({
   displayName: Joi.string().required().trim().strict(),
   avatar: Joi.string().default(null),
   role: Joi.string()
-    .valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN)
+    .valid(...Object.values(USER_ROLES))
     .default(USER_ROLES.CLIENT),
 
   isActive: Joi.boolean().default(false),
@@ -57,7 +52,7 @@ const create = async (data) => {
 const existById = async (id) => {
   return await GET_DB()
     .collection(COLLECTION_NAME)
-    .findOne({ _id: new ObjectId(id) })
+    .findOne({ _id: new ObjectId(id), _destroy: false, isActive: true })
 }
 
 const findOneByEmail = async (email) => {
@@ -89,6 +84,5 @@ export default {
   existById,
   create,
   update,
-  findOneByEmail,
-  VALID_OTHER_GET_FIELDS
+  findOneByEmail
 }

@@ -1,28 +1,29 @@
-import bcryptjs from 'bcryptjs'
 import { StatusCodes } from 'http-status-codes'
 import { v4 as uuidv4 } from 'uuid'
+import { env } from '~/config/environment'
+import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
+import { comparePassword, createTokenPair, hashPassword } from '~/helpers/auth'
 import userModel from '~/models/userModel'
 import { PROVIDER_TYPE, sendEmail } from '~/providers'
+import { JwtProvider } from '~/providers/JwtProvider'
 import ApiError from '~/utils/ApiError'
 import { RESOURCE_TYPES, WEBSITE_DOMAIN } from '~/utils/constants'
 import { getInfoData } from '~/utils/formatters'
-import { comparePassword, createTokenPair, hashPassword } from '~/helpers/auth'
-import { JwtProvider } from '~/providers/JwtProvider'
-import { env } from '~/config/environment'
-import { cloudinary, streamUpload } from '~/providers/CloudinaryProvider'
 import { uploadService } from './uploadService'
-import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
+import { USER_FIELDS } from '~/utils/constants'
 
-const FIELD_USER_RETURN = [
-  '_id',
-  'email',
-  'username',
-  'displayName',
-  'avatar',
-  'role',
-  'isActive',
-  'createdAt'
-]
+// export const FIELD_USER_RETURN = [
+//   '_id',
+//   'email',
+//   'username',
+//   'displayName',
+//   'avatar',
+//   'role',
+//   'isActive',
+//   'createdAt'
+// ]
+
+const { PRIVATE } = USER_FIELDS
 
 const register = async ({ email, password }) => {
   const foundUser = await userModel.findOneByEmail(email)
@@ -57,7 +58,7 @@ const register = async ({ email, password }) => {
     html: htmlContent
   })
 
-  return getInfoData({ fields: FIELD_USER_RETURN, object: createdUser })
+  return getInfoData({ fields: PRIVATE, object: createdUser })
 }
 
 const verify = async ({ email, token }) => {
@@ -77,7 +78,7 @@ const verify = async ({ email, token }) => {
 
   const updatedData = await userModel.update(foundUser._id, inputData)
 
-  return getInfoData({ fields: FIELD_USER_RETURN, object: updatedData })
+  return getInfoData({ fields: PRIVATE, object: updatedData })
 }
 
 const login = async ({ email, password }) => {
@@ -164,7 +165,7 @@ const changePassword = async (user, currentPassword, newPassword) => {
 }
 
 const getUserWithAvatarUrl = (user) => {
-  const result = getInfoData({ fields: FIELD_USER_RETURN, object: user })
+  const result = getInfoData({ fields: PRIVATE, object: user })
   if (user?.avatar) {
     const avatarUrls = uploadService.getTransformedUrls(
       user.avatar,
@@ -175,11 +176,23 @@ const getUserWithAvatarUrl = (user) => {
   return result
 }
 
+const getCommentWithUserAvatarUrl = (comment) => {
+  if (comment?.userAvatar) {
+    const userAvatarUrls = uploadService.getTransformedUrls(
+      comment.userAvatar,
+      UPLOAD_TYPE_KEY.AVATAR
+    )
+    comment.userAvatarUrls = userAvatarUrls
+  }
+  return comment
+}
+
 export const userService = {
   register,
   verify,
   login,
   refreshToken,
   update,
-  getUserWithAvatarUrl
+  getUserWithAvatarUrl,
+  getCommentWithUserAvatarUrl
 }

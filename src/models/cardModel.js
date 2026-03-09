@@ -1,9 +1,7 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
 import { commonFields } from '~/helpers'
-import { getTransformedUrl } from '~/providers/CloudinaryProvider'
 import {
   EMAIL_RULE,
   EMAIL_RULE_MESSAGE,
@@ -36,6 +34,7 @@ const COLLECTION_SCHEMA = Joi.object({
       .pattern(OBJECT_ID_RULE)
       .message(OBJECT_ID_RULE_MESSAGE),
     userEmail: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+    userDisplayName: Joi.string(),
     userAvatar: Joi.string(),
     content: Joi.string(),
     commentAt: Joi.date().timestamp()
@@ -61,10 +60,7 @@ const create = async (card) => {
   }
 }
 
-const update = async (
-  cardId,
-  { pushData = {}, setData = {}, pullData = {} }
-) => {
+const update = async (cardId, { pushData = {}, setData = {} }) => {
   const sanitizedSetData = Object.fromEntries(
     Object.entries(setData).filter(
       ([key]) => !INVALID_UPDATE_FIELDS.includes(key)
@@ -102,11 +98,24 @@ const deleteMany = async (filter) => {
   return await GET_DB().collection(COLLECTION_NAME).deleteMany(filter)
 }
 
+const unshiftNewComment = async (cardId, commentData) => {
+  return await GET_DB()
+    .collection(COLLECTION_NAME)
+    .findOneAndUpdate(
+      { _id: new ObjectId(cardId) },
+      {
+        $push: { comments: { $each: [commentData], $position: 0 } }
+      },
+      { returnDocument: 'after' }
+    )
+}
+
 export default {
   COLLECTION_NAME,
   COLLECTION_SCHEMA,
   create,
   existById,
   update,
-  deleteMany
+  deleteMany,
+  unshiftNewComment
 }

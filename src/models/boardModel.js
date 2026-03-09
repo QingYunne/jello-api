@@ -8,6 +8,7 @@ import { pagingSkipValue } from '~/utils/algorithms'
 import { BOARD_TYPE } from '~/utils/constants'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 import userModel from './userModel'
+import { USER_FIELDS } from '~/utils/constants'
 
 const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 const COLLECTION_NAME = 'boards'
@@ -87,9 +88,7 @@ const find = async (userId, boardId) => {
           localField: 'ownerIds',
           foreignField: '_id',
           as: 'owners',
-          pipeline: [
-            { $project: getSelectedFields(userModel.VALID_OTHER_GET_FIELDS) }
-          ]
+          pipeline: [{ $project: getSelectedFields(USER_FIELDS.PUBLIC) }]
         }
       },
       {
@@ -98,9 +97,7 @@ const find = async (userId, boardId) => {
           localField: 'memberIds',
           foreignField: '_id',
           as: 'members',
-          pipeline: [
-            { $project: getSelectedFields(userModel.VALID_OTHER_GET_FIELDS) }
-          ]
+          pipeline: [{ $project: getSelectedFields(USER_FIELDS.PUBLIC) }]
         }
       }
     ])
