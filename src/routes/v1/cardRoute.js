@@ -28,6 +28,11 @@ Router.route('/:id/cover').put(
   asyncHandler(cardController.uploadCardCover)
 )
 
+Router.route('/:id/member').patch(
+  asyncHandler(cardValidation.update),
+  asyncHandler(cardController.updateCardMembers)
+)
+
 Router.route('/:id/comment').patch(
   asyncHandler(cardValidation.update),
   asyncHandler(cardController.addCommentToCard)

@@ -29,6 +29,7 @@ const addCommentToCard = async (req, res) => {
   )
   res.status(StatusCodes.OK).json(updatedCard)
 }
+
 const moveCardToDiffColumn = async (req, res) => {
   const { id } = req.params
   await cardService.moveCardToDiffColumn(id, req.body)
@@ -37,10 +38,18 @@ const moveCardToDiffColumn = async (req, res) => {
     .json({ message: `Card with id ${id} moved successfully` })
 }
 
+const updateCardMembers = async (req, res) => {
+  const { id } = req.params
+  const { userId, action } = req.body
+  const updatedCard = await cardService.updateCardMemberIds(id, userId, action)
+  res.status(StatusCodes.OK).json(updatedCard)
+}
+
 export const cardController = {
   createCard,
   updateCard,
   addCommentToCard,
   uploadCardCover,
-  moveCardToDiffColumn
+  moveCardToDiffColumn,
+  updateCardMembers
 }

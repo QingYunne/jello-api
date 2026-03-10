@@ -8,9 +8,15 @@ const Router = express.Router()
 
 Router.use(asyncHandler(authMiddleware.isAuthorized))
 
+Router.route('').get(asyncHandler(invitationController.getInvitations))
+
 Router.route('/board').post(
   asyncHandler(invitationValidation.createBoardInvitation),
   asyncHandler(invitationController.createBoardInvitation)
+)
+
+Router.route('/board/:id').patch(
+  asyncHandler(invitationController.updateBoardInvitation)
 )
 
 export const invitationRoute = Router

@@ -78,11 +78,17 @@ const pullColumnOrderIds = async (boardId, columnId) => {
   return await boardModel.update(boardId, { pullData: data })
 }
 
+const pushMemberIds = async (boardId, memberId) => {
+  const data = { memberIds: new ObjectId(memberId) }
+  return await boardModel.update(boardId, { pushData: data })
+}
+
 export const boardService = {
   createBoard,
   getBoard,
   getAllBoards,
   updateBoard,
   pushColumnOrderIds,
-  pullColumnOrderIds
+  pullColumnOrderIds,
+  pushMemberIds
 }

@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import Joi from 'joi'
 import ApiError from '~/utils/ApiError'
+import { CARD_MEMBER_ACTIONS } from '~/utils/constants'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 
 const create = async (req, res, next) => {
@@ -33,7 +34,11 @@ const update = async (req, res, next) => {
     description: Joi.string().optional(),
     commentToAdd: Joi.object({
       content: Joi.string().required()
-    })
+    }),
+    userId: Joi.string()
+      .pattern(OBJECT_ID_RULE)
+      .message(OBJECT_ID_RULE_MESSAGE),
+    action: Joi.string().valid(...Object.values(CARD_MEMBER_ACTIONS))
   })
   try {
     await correctCondition.validateAsync(req.body, {

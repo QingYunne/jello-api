@@ -12,4 +12,25 @@ const createBoardInvitation = async (req, res) => {
   res.status(StatusCodes.CREATED).json(createdInvitation)
 }
 
-export const invitationController = { createBoardInvitation }
+const getInvitations = async (req, res) => {
+  const userId = req.jwtDecoded._id
+  const invitations = await invitationService.getInvitations(userId)
+  res.status(StatusCodes.OK).json(invitations)
+}
+
+const updateBoardInvitation = async (req, res) => {
+  const userId = req.jwtDecoded._id
+  const invitationId = req.params.id
+  const { status } = req.body
+  const updatedInvitation = await invitationService.updateBoardInvitation(
+    userId,
+    { invitationId, status }
+  )
+  res.status(StatusCodes.OK).json(updatedInvitation)
+}
+
+export const invitationController = {
+  createBoardInvitation,
+  getInvitations,
+  updateBoardInvitation
+}

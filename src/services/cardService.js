@@ -4,9 +4,8 @@ import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
 import boardModel from '~/models/boardModel'
 import cardModel from '~/models/cardModel'
 import columnModel from '~/models/columnModel'
-import userModel from '~/models/userModel'
 import ApiError from '~/utils/ApiError'
-import { RESOURCE_TYPES } from '~/utils/constants'
+import { CARD_MEMBER_ACTIONS, RESOURCE_TYPES } from '~/utils/constants'
 import { slugify } from '~/utils/formatters'
 import { uploadService } from './uploadService'
 import { userService } from './userService'
@@ -64,7 +63,7 @@ const updateCardCover = async (cardId, fileBuffer) => {
 const addCommentToCard = async (cardId, userId, comment) => {
   const foundCard = await cardModel.existById(cardId)
   if (!foundCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
-  const foundUser = await userModel.existById(userId)
+  const foundUser = await userService.getActiveUserById(userId)
   if (!foundUser) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
   const inputData = {
     userId: foundUser._id,
@@ -78,6 +77,31 @@ const addCommentToCard = async (cardId, userId, comment) => {
   const updatedCard = await cardModel.unshiftNewComment(cardId, inputData)
   if (!updatedCard)
     throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to comments')
+  return getCardWithAllImageUrl(updatedCard)
+}
+
+const updateCardMemberIds = async (cardId, userId, action) => {
+  const foundCard = await cardModel.existById(cardId)
+  if (!foundCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
+  const foundUser = await userService.getActiveUserById(userId)
+  if (!foundUser) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+  const isMember = foundCard.memberIds
+    ?.map((id) => id.toString())
+    .includes(foundUser._id.toString())
+  let inputData = null
+  if (action === CARD_MEMBER_ACTIONS.ADD && !isMember) {
+    inputData = { pushData: { memberIds: foundUser._id } }
+  }
+  if (action === CARD_MEMBER_ACTIONS.REMOVE && isMember) {
+    inputData = { pullData: { memberIds: foundUser._id } }
+  }
+  if (!inputData) return getCardWithAllImageUrl(foundCard)
+  const updatedCard = await cardModel.update(cardId, inputData)
+  if (!updatedCard)
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to add member!'
+    )
   return getCardWithAllImageUrl(updatedCard)
 }
 
@@ -143,5 +167,6 @@ export const cardService = {
   moveCardToDiffColumn,
   deleteManyByColumnId,
   getCardWithCover,
-  updateCardCover
+  updateCardCover,
+  updateCardMemberIds
 }

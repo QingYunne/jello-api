@@ -49,14 +49,16 @@ const create = async (data) => {
   }
 }
 
-const existById = async (id) => {
+const existById = async (id, options = {}) => {
   return await GET_DB()
     .collection(COLLECTION_NAME)
-    .findOne({ _id: new ObjectId(id), _destroy: false, isActive: true })
+    .findOne({ _id: new ObjectId(id), _destroy: false, ...options })
 }
 
-const findOneByEmail = async (email) => {
-  return await GET_DB().collection(COLLECTION_NAME).findOne({ email })
+const findOneByEmail = async (email, options = {}) => {
+  return await GET_DB()
+    .collection(COLLECTION_NAME)
+    .findOne({ email, _destroy: false, ...options })
 }
 
 const update = async (id, data) => {

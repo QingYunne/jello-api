@@ -6,5 +6,5 @@ export const USER_ROLES = {
 
 export const USER_FIELDS = {
   PUBLIC: ['username', 'displayName', 'avatar', 'email'],
-  PRIVATE: ['email', 'username', 'displayName', 'avatar', 'role']
+  PRIVATE: ['_id', 'email', 'username', 'displayName', 'avatar', 'role']
 }

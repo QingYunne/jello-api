@@ -60,7 +60,10 @@ const create = async (card) => {
   }
 }
 
-const update = async (cardId, { pushData = {}, setData = {} }) => {
+const update = async (
+  cardId,
+  { pushData = {}, setData = {}, pullData = {} }
+) => {
   const sanitizedSetData = Object.fromEntries(
     Object.entries(setData).filter(
       ([key]) => !INVALID_UPDATE_FIELDS.includes(key)
@@ -73,6 +76,10 @@ const update = async (cardId, { pushData = {}, setData = {} }) => {
 
   if (Object.keys(pushData).length > 0) {
     updateOperation.$push = { ...pushData }
+  }
+
+  if (Object.keys(pullData).length > 0) {
+    updateOperation.$pull = { ...pullData }
   }
   if (Object.keys(updateOperation).length === 0) return null
   updateOperation.$set = {
@@ -98,16 +105,22 @@ const deleteMany = async (filter) => {
   return await GET_DB().collection(COLLECTION_NAME).deleteMany(filter)
 }
 
-const unshiftNewComment = async (cardId, commentData) => {
+const unshiftData = async (cardId, data) => {
+  let pushObject = Object.entries(data).reduce((acc, [key, value]) => {
+    acc[key] = { $each: [value], $position: 0 }
+    return acc
+  }, {})
   return await GET_DB()
     .collection(COLLECTION_NAME)
     .findOneAndUpdate(
       { _id: new ObjectId(cardId) },
-      {
-        $push: { comments: { $each: [commentData], $position: 0 } }
-      },
+      { $push: pushObject },
       { returnDocument: 'after' }
     )
+}
+
+const unshiftNewComment = async (cardId, commentData) => {
+  return await unshiftData(cardId, { comments: commentData })
 }
 
 export default {
