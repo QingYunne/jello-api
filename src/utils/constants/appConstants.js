@@ -1,7 +1,7 @@
 import { env } from '~/config/environment'
 
 // constants/app.constants.js
-export const WHITELIST_DOMAINS = [
+export const WHITELIST_DOMAINS = process.env.WHITELIST_DOMAINS?.split(',') || [
   'http://localhost:5173',
   'http://localhost:5174'
 ]
