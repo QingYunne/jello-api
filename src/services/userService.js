@@ -15,7 +15,7 @@ import { options } from 'joi'
 
 // export const FIELD_USER_RETURN = [
 //   '_id',
-//   'email',
+//   'email',u
 //   'username',
 //   'displayName',
 //   'avatar',
@@ -27,7 +27,7 @@ import { options } from 'joi'
 const { PRIVATE } = USER_FIELDS
 
 const register = async ({ email, password }) => {
-  const foundUser = await userService.getActiveUserByEmail(email)
+  const foundUser = await getActiveUserByEmail(email)
   // console.log('foudUser', foundUser)
 
   if (foundUser)
@@ -41,9 +41,12 @@ const register = async ({ email, password }) => {
     displayName: username,
     verifyToken: uuidv4()
   }
+
   const createdUser = await userModel.create(userData)
 
   const verificationLink = `${WEBSITE_DOMAIN}/account/verification?email=${createdUser?.email}&token=${createdUser?.verifyToken}`
+
+  console.log('VERIFICATION LINK::', verificationLink)
 
   const customSubject = 'Please verify your email before using our services'
   const htmlContent = `
@@ -52,11 +55,13 @@ const register = async ({ email, password }) => {
     <h3>Sincerely<br /> - Qing Yun</h3>
   `
 
-  await sendEmail(PROVIDER_TYPE.MAILERSEND, {
+  sendEmail(PROVIDER_TYPE.MAILERSEND, {
     to: createdUser.email,
     toName: createdUser.displayName,
     subject: customSubject,
     html: htmlContent
+  }).catch((err) => {
+    console.error('EMAIL ERROR:', err)
   })
 
   return getInfoData({ fields: PRIVATE, object: createdUser })

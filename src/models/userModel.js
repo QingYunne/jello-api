@@ -41,11 +41,12 @@ const validate = async (data) => {
 }
 
 const create = async (data) => {
+  data.isActive = true
   const validData = await validate(data)
   const res = await GET_DB().collection(COLLECTION_NAME).insertOne(validData)
   return {
     ...validData,
-    _id: res.insertedId.toString()
+    _id: res.insertedId.toString(),
   }
 }
 

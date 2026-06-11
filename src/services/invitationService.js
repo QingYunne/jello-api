@@ -16,7 +16,7 @@ const createBoardInvitation = async ({ inviterId, inviteeEmail, boardId }) => {
   const inviter = await userService.getActiveUserById(inviterId)
   const invitee = await userService.getActiveUserByEmail(inviteeEmail)
   const board = await boardModel.existById(boardId)
-  console.log(JSON.stringify([inviter, invitee, board]))
+  // console.log(JSON.stringify([inviter, invitee, board]))
 
   if (!inviter || !invitee || !board)
     throw new ApiError(

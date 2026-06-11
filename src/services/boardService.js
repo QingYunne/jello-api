@@ -46,12 +46,14 @@ const getBoard = async (userId, boardId) => {
 const getAllBoards = async (
   userId,
   page = DEFAULT_PAGE,
-  limit = DEFAULT_LIMIT
+  limit = DEFAULT_LIMIT,
+  queryFilters
 ) => {
   return await boardModel.findAll(
     userId,
     parseInt(page, 10),
-    parseInt(limit, 10)
+    parseInt(limit, 10),
+    queryFilters
   )
 }
 

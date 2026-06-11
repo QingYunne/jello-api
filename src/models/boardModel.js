@@ -147,7 +147,7 @@ const update = async (
   return res || null
 }
 
-const findAll = async (userId, page, limit) => {
+const findAll = async (userId, page, limit, queryFilters = null) => {
   const filter = [
     { _destroy: false },
     {
@@ -157,6 +157,12 @@ const findAll = async (userId, page, limit) => {
       ]
     }
   ]
+
+  if (queryFilters) {
+    Object.entries(queryFilters).forEach(([key, value]) => {
+      filter[key] = { $regex: value, $options: 'i' }
+    })
+  }
 
   const query = await GET_DB()
     .collection(COLLECTION_NAME)

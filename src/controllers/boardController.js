@@ -16,8 +16,8 @@ const getBoard = async (req, res) => {
 
 const getAllBoards = async (req, res) => {
   const userId = req.jwtDecoded._id
-  const { page, limit } = req.query
-  const boards = await boardService.getAllBoards(userId, page, limit)
+  const { page, limit, q } = req.query
+  const boards = await boardService.getAllBoards(userId, page, limit, q)
   res.status(StatusCodes.OK).json(boards)
 }
 
