@@ -1,5 +1,4 @@
 import express from 'express'
-import { StatusCodes } from 'http-status-codes'
 import { boardController } from '~/controllers/boardController'
 import { asyncHandler } from '~/helpers/asyncHandler'
 import { authMiddleware } from '~/middlewares/authMiddleware'
@@ -10,9 +9,7 @@ const Router = express.Router()
 Router.use(asyncHandler(authMiddleware.isAuthorized))
 
 Router.route('/')
-  .get((req, res) => {
-    res.status(StatusCodes.OK).json({ message: 'GET: API get list board' })
-  })
+  .get(asyncHandler(boardController.getAllBoards))
   .post(
     asyncHandler(boardValidation.create),
     asyncHandler(boardController.createBoard)

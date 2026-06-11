@@ -49,7 +49,7 @@ const deleteColumn = async (columnId) => {
       'Failed to delete column'
     )
   }
-  const deletedCards = await cardService.deleteManyByColumnId(columnId)
+  await cardService.deleteManyByColumnId(columnId)
   const updatedBoard = await boardService.pullColumnOrderIds(
     foundColumn.boardId,
     columnId

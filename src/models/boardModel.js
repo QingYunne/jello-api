@@ -1,11 +1,14 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { BOARD_TYPE } from '~/utils/constants'
-import columnModel from '~/models/columnModel'
+import { commonFields, getSelectedFields } from '~/helpers'
 import cardModel from '~/models/cardModel'
+import columnModel from '~/models/columnModel'
+import { pagingSkipValue } from '~/utils/algorithms'
+import { BOARD_TYPE } from '~/utils/constants'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
-import { commonFields, updateTimestamps } from '~/helpers'
+import userModel from './userModel'
+import { USER_FIELDS } from '~/utils/constants'
 
 const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
 const COLLECTION_NAME = 'boards'
@@ -18,6 +21,12 @@ const COLLECTION_SCHEMA = Joi.object({
   columnOrderIds: Joi.array()
     .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
     .default([]),
+  ownerIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
+  memberIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
   ...commonFields
 })
 
@@ -25,16 +34,29 @@ const validate = async (data) => {
   return await COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
-const create = async (board) => {
+const create = async (userId, board) => {
   const validBoard = await validate(board)
-  const res = await GET_DB().collection(COLLECTION_NAME).insertOne(validBoard)
+  const boardWithOwner = { ...validBoard, ownerIds: [new ObjectId(userId)] }
+  const res = await GET_DB()
+    .collection(COLLECTION_NAME)
+    .insertOne(boardWithOwner)
   return {
     ...validBoard,
     _id: res.insertedId.toString()
   }
 }
 
-const find = async (boardId) => {
+const find = async (userId, boardId) => {
+  const filter = [
+    { _id: new ObjectId(boardId) },
+    { _destroy: false },
+    {
+      $or: [
+        { ownerIds: { $all: [new ObjectId(userId)] } },
+        { memberIds: { $all: [new ObjectId(userId)] } }
+      ]
+    }
+  ]
   // const res = await GET_DB()
   //   .collection(COLLECTION_NAME)
   //   .findOne({ _id: new ObjectId(boardId) })
@@ -42,10 +64,7 @@ const find = async (boardId) => {
     .collection(COLLECTION_NAME)
     .aggregate([
       {
-        $match: {
-          _id: new ObjectId(boardId),
-          _destroy: false
-        }
+        $match: { $and: filter }
       },
       {
         $lookup: {
@@ -61,6 +80,24 @@ const find = async (boardId) => {
           localField: '_id',
           foreignField: 'boardId',
           as: 'cards'
+        }
+      },
+      {
+        $lookup: {
+          from: userModel.COLLECTION_NAME,
+          localField: 'ownerIds',
+          foreignField: '_id',
+          as: 'owners',
+          pipeline: [{ $project: getSelectedFields(USER_FIELDS.PUBLIC) }]
+        }
+      },
+      {
+        $lookup: {
+          from: userModel.COLLECTION_NAME,
+          localField: 'memberIds',
+          foreignField: '_id',
+          as: 'members',
+          pipeline: [{ $project: getSelectedFields(USER_FIELDS.PUBLIC) }]
         }
       }
     ])
@@ -110,11 +147,57 @@ const update = async (
   return res || null
 }
 
+const findAll = async (userId, page, limit, queryFilters = null) => {
+  const filter = [
+    { _destroy: false },
+    {
+      $or: [
+        { ownerIds: { $all: [new ObjectId(userId)] } },
+        { memberIds: { $all: [new ObjectId(userId)] } }
+      ]
+    }
+  ]
+
+  if (queryFilters) {
+    Object.entries(queryFilters).forEach(([key, value]) => {
+      filter[key] = { $regex: value, $options: 'i' }
+    })
+  }
+
+  const query = await GET_DB()
+    .collection(COLLECTION_NAME)
+    .aggregate(
+      [
+        { $match: { $and: filter } },
+        { $sort: { title: 1 } },
+        {
+          $facet: {
+            //thread1: query board
+            queryBoards: [
+              { $skip: pagingSkipValue(page, limit) },
+              { $limit: limit }
+            ],
+            //thread2: query total of boards
+            queryCount: [{ $count: 'total' }]
+          }
+        }
+      ],
+      { collation: { locale: 'en' } }
+    )
+    .toArray()
+  const res = query[0]
+  return {
+    boards: res.queryBoards,
+    total: res.queryCount[0]?.total || 0
+  }
+}
+
 export default {
   COLLECTION_NAME,
   COLLECTION_SCHEMA,
   create,
   find,
+  findAll,
   existById,
   update
 }

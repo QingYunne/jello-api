@@ -58,10 +58,7 @@ const existById = async (id) => {
     .findOne({ _id: new ObjectId(id) })
 }
 
-const update = async (
-  columnId,
-  { pushData = {}, setData = {}, pullData = {} }
-) => {
+const update = async (columnId, { pushData = {}, setData = {} }) => {
   const sanitizedSetData = Object.fromEntries(
     Object.entries(setData).filter(
       ([key]) => !INVALID_UPDATE_FIELDS.includes(key)

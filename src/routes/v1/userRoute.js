@@ -15,6 +15,7 @@ Router.route('/register').post(
   asyncHandler(userController.registerUser)
 )
 
+
 Router.route('/verify').put(
   asyncHandler(userValidation.verify),
   asyncHandler(userController.verifyUser)
@@ -29,9 +30,9 @@ Router.route('/logout').post(asyncHandler(userController.logout))
 
 Router.route('/refresh_token').get(asyncHandler(userController.refreshToken))
 
-Router.use(asyncHandler(authMiddleware.isAuthorized))
 
 Router.route('').patch(
+  asyncHandler(authMiddleware.isAuthorized),
   asyncHandler(userValidation.update),
   asyncHandler(uploadMiddleware('AVATAR')),
   handleMulterError,

@@ -1,18 +1,18 @@
 import { StatusCodes } from 'http-status-codes'
 import { columnService } from '~/services/columnService'
 
-const createColumn = async (req, res, next) => {
+const createColumn = async (req, res) => {
   const createdColumn = await columnService.createColumn(req.body)
   res.status(StatusCodes.CREATED).json(createdColumn)
 }
 
-const updateColumn = async (req, res, next) => {
+const updateColumn = async (req, res) => {
   const columnId = req.params.id
   const updatedColumn = await columnService.updateColumn(columnId, req.body)
   res.status(StatusCodes.OK).json(updatedColumn)
 }
 
-const deleteColumn = async (req, res, next) => {
+const deleteColumn = async (req, res) => {
   const columnId = req.params.id
   const deletedRes = await columnService.deleteColumn(columnId)
   res.status(StatusCodes.OK).json(deletedRes)

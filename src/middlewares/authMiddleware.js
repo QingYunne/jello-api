@@ -4,6 +4,7 @@ import { JwtProvider } from '~/providers/JwtProvider'
 import ApiError from '~/utils/ApiError'
 
 const isAuthorized = async (req, res, next) => {
+  // console.log('🔥 AUTH HIT:', req.method, req.originalUrl)
   const accessToken = req.cookies?.accessToken
   if (!accessToken) {
     return next(

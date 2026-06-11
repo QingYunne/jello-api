@@ -8,6 +8,9 @@ import { APIs_V1 } from '~/routes/v1'
 import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware'
 import { corsOptions } from './config/cors'
 import cookieParser from 'cookie-parser'
+import { Server } from 'socket.io'
+import http from 'http'
+import { inviteUserToBoardSocket } from './sockets/inviteUserToBoardSocket'
 
 const app = express()
 
@@ -24,7 +27,13 @@ const START_SERVER = () => {
 
   app.use(errorHandlingMiddleware)
 
-  app.listen(port, hostname, () => {
+  const server = http.createServer(app)
+  const io = new Server(server, { cors: corsOptions })
+  io.on('connection', (socket) => {
+    inviteUserToBoardSocket(socket)
+  })
+
+  server.listen(port, hostname, () => {
     console.log(`Server is running at: ${hostname}:${port}/`)
   })
 

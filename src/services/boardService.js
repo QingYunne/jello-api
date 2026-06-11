@@ -3,14 +3,19 @@ import boardModel from '~/models/boardModel'
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { cardService } from './cardService'
+import { userService } from './userService'
 
-const createBoard = async (board) => {
+export const DEFAULT_PAGE = '1'
+export const DEFAULT_LIMIT = '12'
+
+const createBoard = async (userId, board) => {
   const newBoard = { ...board, slug: slugify(board.title) }
-  return await boardModel.create(newBoard)
+  return await boardModel.create(userId, newBoard)
 }
 
-const getBoard = async (boardId) => {
-  const board = await boardModel.find(boardId)
+const getBoard = async (userId, boardId) => {
+  const board = await boardModel.find(userId, boardId)
   if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found')
 
   const cardsByColumn = {}
@@ -19,7 +24,7 @@ const getBoard = async (boardId) => {
     if (!cardsByColumn[columnId]) {
       cardsByColumn[columnId] = []
     }
-    cardsByColumn[columnId].push(card)
+    cardsByColumn[columnId].push(cardService.getCardWithCover(card))
   })
 
   board.columns.forEach((column) => {
@@ -27,8 +32,29 @@ const getBoard = async (boardId) => {
     column.cards = cardsByColumn[columnId] || []
   })
 
+  board.owners = board.owners?.map((owner) =>
+    userService.getUserWithAvatarUrl(owner)
+  )
+  board.members = board.members?.map((member) =>
+    userService.getUserWithAvatarUrl(member)
+  )
+
   delete board.cards
   return board
+}
+
+const getAllBoards = async (
+  userId,
+  page = DEFAULT_PAGE,
+  limit = DEFAULT_LIMIT,
+  queryFilters
+) => {
+  return await boardModel.findAll(
+    userId,
+    parseInt(page, 10),
+    parseInt(limit, 10),
+    queryFilters
+  )
 }
 
 const updateBoard = async (boardId, data) => {
@@ -54,11 +80,17 @@ const pullColumnOrderIds = async (boardId, columnId) => {
   return await boardModel.update(boardId, { pullData: data })
 }
 
+const pushMemberIds = async (boardId, memberId) => {
+  const data = { memberIds: new ObjectId(memberId) }
+  return await boardModel.update(boardId, { pushData: data })
+}
 
 export const boardService = {
   createBoard,
   getBoard,
+  getAllBoards,
   updateBoard,
   pushColumnOrderIds,
-  pullColumnOrderIds
+  pullColumnOrderIds,
+  pushMemberIds
 }

@@ -2,7 +2,12 @@ import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { commonFields } from '~/helpers'
-import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import {
+  EMAIL_RULE,
+  EMAIL_RULE_MESSAGE,
+  OBJECT_ID_RULE,
+  OBJECT_ID_RULE_MESSAGE
+} from '~/utils/validators'
 
 const INVALID_UPDATE_FIELDS = ['_id', 'createdAt', 'boardId']
 
@@ -20,6 +25,20 @@ const COLLECTION_SCHEMA = Joi.object({
   title: Joi.string().required().min(3).max(100).trim().strict(),
   slug: Joi.string().required().min(3).trim().strict(),
   description: Joi.string().optional(),
+  cover: Joi.string().default(null),
+  memberIds: Joi.array()
+    .items(Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE))
+    .default([]),
+  comments: Joi.array().items({
+    userId: Joi.string()
+      .pattern(OBJECT_ID_RULE)
+      .message(OBJECT_ID_RULE_MESSAGE),
+    userEmail: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE),
+    userDisplayName: Joi.string(),
+    userAvatar: Joi.string(),
+    content: Joi.string(),
+    commentAt: Joi.date().timestamp()
+  }),
   ...commonFields
 })
 
@@ -58,6 +77,10 @@ const update = async (
   if (Object.keys(pushData).length > 0) {
     updateOperation.$push = { ...pushData }
   }
+
+  if (Object.keys(pullData).length > 0) {
+    updateOperation.$pull = { ...pullData }
+  }
   if (Object.keys(updateOperation).length === 0) return null
   updateOperation.$set = {
     ...(updateOperation.$set || {}),
@@ -82,11 +105,30 @@ const deleteMany = async (filter) => {
   return await GET_DB().collection(COLLECTION_NAME).deleteMany(filter)
 }
 
+const unshiftData = async (cardId, data) => {
+  let pushObject = Object.entries(data).reduce((acc, [key, value]) => {
+    acc[key] = { $each: [value], $position: 0 }
+    return acc
+  }, {})
+  return await GET_DB()
+    .collection(COLLECTION_NAME)
+    .findOneAndUpdate(
+      { _id: new ObjectId(cardId) },
+      { $push: pushObject },
+      { returnDocument: 'after' }
+    )
+}
+
+const unshiftNewComment = async (cardId, commentData) => {
+  return await unshiftData(cardId, { comments: commentData })
+}
+
 export default {
   COLLECTION_NAME,
   COLLECTION_SCHEMA,
   create,
   existById,
   update,
-  deleteMany
+  deleteMany,
+  unshiftNewComment
 }

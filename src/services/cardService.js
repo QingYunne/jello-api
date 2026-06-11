@@ -1,10 +1,14 @@
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
 import boardModel from '~/models/boardModel'
 import cardModel from '~/models/cardModel'
 import columnModel from '~/models/columnModel'
 import ApiError from '~/utils/ApiError'
+import { CARD_MEMBER_ACTIONS, RESOURCE_TYPES } from '~/utils/constants'
 import { slugify } from '~/utils/formatters'
+import { uploadService } from './uploadService'
+import { userService } from './userService'
 
 const createCard = async (card) => {
   const foundBoard = await boardModel.existById(card.boardId)
@@ -21,14 +25,89 @@ const createCard = async (card) => {
       'Failed to add card to column'
     )
   }
-  return createdCard
+  return getCardWithAllImageUrl(createdCard)
+}
+
+const updateCard = async (cardId, data) => {
+  const foundCard = await cardModel.existById(cardId)
+  if (!foundCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
+  const updatedCard = await cardModel.update(cardId, { setData: data })
+  if (!updatedCard)
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to update card'
+    )
+  return getCardWithAllImageUrl(updatedCard)
+}
+
+const updateCardCover = async (cardId, fileBuffer) => {
+  const foundCard = await cardModel.existById(cardId)
+  if (!foundCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found')
+  const uploadResult = await uploadService.uploadFile(
+    fileBuffer,
+    UPLOAD_TYPE_KEY.CARD_COVER
+  )
+  if (foundCard.cover)
+    await uploadService.deleteOldFile(foundCard.cover, RESOURCE_TYPES.IMAGE)
+  const updatedCard = await cardModel.update(cardId, {
+    setData: { cover: uploadResult.publicId }
+  })
+  if (!updatedCard)
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to upload card cover'
+    )
+  return getCardWithAllImageUrl(updatedCard)
+}
+
+const addCommentToCard = async (cardId, userId, comment) => {
+  const foundCard = await cardModel.existById(cardId)
+  if (!foundCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
+  const foundUser = await userService.getActiveUserById(userId)
+  if (!foundUser) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found')
+  const inputData = {
+    userId: foundUser._id,
+    userEmail: foundUser.email,
+    userDisplayName: foundUser.displayName,
+    userAvatar: foundUser.avatar,
+    content: comment?.content,
+    commentedAt: Date.now()
+  }
+
+  const updatedCard = await cardModel.unshiftNewComment(cardId, inputData)
+  if (!updatedCard)
+    throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to comments')
+  return getCardWithAllImageUrl(updatedCard)
+}
+
+const updateCardMemberIds = async (cardId, userId, action) => {
+  const foundCard = await cardModel.existById(cardId)
+  if (!foundCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
+  const foundUser = await userService.getActiveUserById(userId)
+  if (!foundUser) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!')
+  const isMember = foundCard.memberIds
+    ?.map((id) => id.toString())
+    .includes(foundUser._id.toString())
+  let inputData = null
+  if (action === CARD_MEMBER_ACTIONS.ADD && !isMember) {
+    inputData = { pushData: { memberIds: foundUser._id } }
+  }
+  if (action === CARD_MEMBER_ACTIONS.REMOVE && isMember) {
+    inputData = { pullData: { memberIds: foundUser._id } }
+  }
+  if (!inputData) return getCardWithAllImageUrl(foundCard)
+  const updatedCard = await cardModel.update(cardId, inputData)
+  if (!updatedCard)
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to add member!'
+    )
+  return getCardWithAllImageUrl(updatedCard)
 }
 
 const moveCardToDiffColumn = async (cardId, data) => {
-  if (!cardId)
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Card ID is required')
   const foundCard = await cardModel.existById(cardId)
-  if (!foundCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found')
+  if (!foundCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
   const prevColumnId = foundCard.columnId
 
   const foundNextColumn = await columnModel.existById(data.nextColumnId)
@@ -52,14 +131,42 @@ const moveCardToDiffColumn = async (cardId, data) => {
       'Failed to update card column'
     )
   }
+  return getCardWithAllImageUrl(updatedCard)
 }
 
 const deleteManyByColumnId = async (columnId) => {
   return await cardModel.deleteMany({ columnId: new ObjectId(columnId) })
 }
 
+const getCardWithAllImageUrl = (card) => {
+  return getCardWithCover(getCardWithCommentsHaveUserAvatarUrl(card))
+}
+
+const getCardWithCover = (card) => {
+  if (card?.cover) {
+    const coverUrls = uploadService.getTransformedUrls(
+      card.cover,
+      UPLOAD_TYPE_KEY.CARD_COVER
+    )
+    card.coverUrls = coverUrls
+  }
+  return card
+}
+
+const getCardWithCommentsHaveUserAvatarUrl = (card) => {
+  if (card?.comments?.length > 0) {
+    card.comments = card.comments?.map(userService.getCommentWithUserAvatarUrl)
+  }
+  return card
+}
+
 export const cardService = {
   createCard,
+  updateCard,
+  addCommentToCard,
   moveCardToDiffColumn,
-  deleteManyByColumnId
+  deleteManyByColumnId,
+  getCardWithCover,
+  updateCardCover,
+  updateCardMemberIds
 }

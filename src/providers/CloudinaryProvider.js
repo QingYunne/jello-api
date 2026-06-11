@@ -28,6 +28,7 @@ export const streamUpload = (fileBuffer, options = {}) => {
       }
     )
     streamifier.createReadStream(fileBuffer).pipe(uploadStream)
+    // uploadStream.end(fileBuffer)
   })
 }
 

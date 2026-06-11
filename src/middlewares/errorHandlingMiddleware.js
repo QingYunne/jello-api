@@ -12,7 +12,8 @@ export const errorHandlingMiddleware = (err, req, res, next) => {
     stack: err.stack
   }
 
-  if (env.BUILD_MODE !== 'dev') delete responseError.stack
+  if (env.BUILD_MODE !== 'dev')
+  delete responseError.stack
 
   // Set headers BEFORE sending the response
   res.set({

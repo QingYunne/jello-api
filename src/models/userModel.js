@@ -1,18 +1,14 @@
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
-import { commonFields } from '~/helpers'
+import { commonFields, updateTimestamps } from '~/helpers'
 import {
   EMAIL_RULE,
   EMAIL_RULE_MESSAGE,
   PASSWORD_RULE,
   PASSWORD_RULE_MESSAGE
 } from '~/utils/validators'
-
-const USER_ROLES = {
-  CLIENT: 'client',
-  ADMIN: 'admin'
-}
+import { USER_ROLES } from '~/utils/constants'
 
 const COLLECTION_NAME = 'users'
 const INVALID_UPDATE_FIELDS = ['_id', 'email', 'username', 'createdAt']
@@ -31,7 +27,7 @@ const COLLECTION_SCHEMA = Joi.object({
   displayName: Joi.string().required().trim().strict(),
   avatar: Joi.string().default(null),
   role: Joi.string()
-    .valid(USER_ROLES.CLIENT, USER_ROLES.ADMIN)
+    .valid(...Object.values(USER_ROLES))
     .default(USER_ROLES.CLIENT),
 
   isActive: Joi.boolean().default(false),
@@ -45,29 +41,28 @@ const validate = async (data) => {
 }
 
 const create = async (data) => {
+  data.isActive = true
   const validData = await validate(data)
   const res = await GET_DB().collection(COLLECTION_NAME).insertOne(validData)
   return {
     ...validData,
-    _id: res.insertedId.toString()
+    _id: res.insertedId.toString(),
   }
 }
 
-const existById = async (id) => {
+const existById = async (id, options = {}) => {
   return await GET_DB()
     .collection(COLLECTION_NAME)
-    .findOne({ _id: new ObjectId(id) })
+    .findOne({ _id: new ObjectId(id), _destroy: false, ...options })
 }
 
-const findOneByEmail = async (email) => {
-  return await GET_DB().collection(COLLECTION_NAME).findOne({ email })
+const findOneByEmail = async (email, options = {}) => {
+  return await GET_DB()
+    .collection(COLLECTION_NAME)
+    .findOne({ email, _destroy: false, ...options })
 }
 
 const update = async (id, data) => {
-  // drop any fields that are explicitly forbidden _and_ any values that
-  // are `undefined`.  mongoose/mongo drivers don't like being asked to set
-  // a key to undefined, which is exactly what was happening when the
-  // controller spread an undefined avatar buffer into an empty payload.
   const sanitizedData = Object.fromEntries(
     Object.entries(data).filter(
       ([key, value]) =>
@@ -79,7 +74,7 @@ const update = async (id, data) => {
     .collection(COLLECTION_NAME)
     .findOneAndUpdate(
       { _id: new ObjectId(id) },
-      { $set: sanitizedData },
+      { $set: updateTimestamps(sanitizedData) },
       { returnDocument: 'after' }
     )
 

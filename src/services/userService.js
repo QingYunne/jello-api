@@ -1,31 +1,33 @@
-import bcryptjs from 'bcryptjs'
 import { StatusCodes } from 'http-status-codes'
 import { v4 as uuidv4 } from 'uuid'
+import { env } from '~/config/environment'
+import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
+import { comparePassword, createTokenPair, hashPassword } from '~/helpers/auth'
 import userModel from '~/models/userModel'
 import { PROVIDER_TYPE, sendEmail } from '~/providers'
+import { JwtProvider } from '~/providers/JwtProvider'
 import ApiError from '~/utils/ApiError'
 import { RESOURCE_TYPES, WEBSITE_DOMAIN } from '~/utils/constants'
 import { getInfoData } from '~/utils/formatters'
-import { comparePassword, createTokenPair, hashPassword } from '~/helpers/auth'
-import { JwtProvider } from '~/providers/JwtProvider'
-import { env } from '~/config/environment'
-import { cloudinary, streamUpload } from '~/providers/CloudinaryProvider'
 import { uploadService } from './uploadService'
-import { UPLOAD_TYPE_KEY } from '~/config/uploadConfig'
+import { USER_FIELDS } from '~/utils/constants'
+import { options } from 'joi'
 
-const FIELD_USER_RETURN = [
-  '_id',
-  'email',
-  'username',
-  'displayName',
-  'avatar',
-  'role',
-  'isActive',
-  'createdAt'
-]
+// export const FIELD_USER_RETURN = [
+//   '_id',
+//   'email',u
+//   'username',
+//   'displayName',
+//   'avatar',
+//   'role',
+//   'isActive',
+//   'createdAt'
+// ]
+
+const { PRIVATE } = USER_FIELDS
 
 const register = async ({ email, password }) => {
-  const foundUser = await userModel.findOneByEmail(email)
+  const foundUser = await getActiveUserByEmail(email)
   // console.log('foudUser', foundUser)
 
   if (foundUser)
@@ -39,9 +41,12 @@ const register = async ({ email, password }) => {
     displayName: username,
     verifyToken: uuidv4()
   }
+
   const createdUser = await userModel.create(userData)
 
   const verificationLink = `${WEBSITE_DOMAIN}/account/verification?email=${createdUser?.email}&token=${createdUser?.verifyToken}`
+
+  console.log('VERIFICATION LINK::', verificationLink)
 
   const customSubject = 'Please verify your email before using our services'
   const htmlContent = `
@@ -50,14 +55,16 @@ const register = async ({ email, password }) => {
     <h3>Sincerely<br /> - Qing Yun</h3>
   `
 
-  await sendEmail(PROVIDER_TYPE.MAILERSEND, {
+  sendEmail(PROVIDER_TYPE.MAILERSEND, {
     to: createdUser.email,
     toName: createdUser.displayName,
     subject: customSubject,
     html: htmlContent
+  }).catch((err) => {
+    console.error('EMAIL ERROR:', err)
   })
 
-  return getInfoData({ fields: FIELD_USER_RETURN, object: createdUser })
+  return getInfoData({ fields: PRIVATE, object: createdUser })
 }
 
 const verify = async ({ email, token }) => {
@@ -77,7 +84,7 @@ const verify = async ({ email, token }) => {
 
   const updatedData = await userModel.update(foundUser._id, inputData)
 
-  return getInfoData({ fields: FIELD_USER_RETURN, object: updatedData })
+  return getInfoData({ fields: PRIVATE, object: updatedData })
 }
 
 const login = async ({ email, password }) => {
@@ -123,10 +130,8 @@ const refreshToken = async (refreshToken) => {
 }
 
 const update = async (userId, data) => {
-  const foundUser = await userModel.existById(userId)
+  const foundUser = await getActiveUserById(userId)
   if (!foundUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found')
-  if (!foundUser.isActive)
-    throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your account is not active')
 
   let updatedUser = {}
   if (data.current_password && data.new_password) {
@@ -164,7 +169,7 @@ const changePassword = async (user, currentPassword, newPassword) => {
 }
 
 const getUserWithAvatarUrl = (user) => {
-  const result = getInfoData({ fields: FIELD_USER_RETURN, object: user })
+  const result = getInfoData({ fields: PRIVATE, object: user })
   if (user?.avatar) {
     const avatarUrls = uploadService.getTransformedUrls(
       user.avatar,
@@ -175,10 +180,33 @@ const getUserWithAvatarUrl = (user) => {
   return result
 }
 
+const getCommentWithUserAvatarUrl = (comment) => {
+  if (comment?.userAvatar) {
+    const userAvatarUrls = uploadService.getTransformedUrls(
+      comment.userAvatar,
+      UPLOAD_TYPE_KEY.AVATAR
+    )
+    comment.userAvatarUrls = userAvatarUrls
+  }
+  return comment
+}
+
+const getActiveUserById = async (userId) => {
+  return await userModel.existById(userId, { isActive: true })
+}
+
+const getActiveUserByEmail = async (email) => {
+  return await userModel.findOneByEmail(email, { isActive: true })
+}
+
 export const userService = {
   register,
   verify,
   login,
   refreshToken,
-  update
+  update,
+  getActiveUserById,
+  getActiveUserByEmail,
+  getUserWithAvatarUrl,
+  getCommentWithUserAvatarUrl
 }
