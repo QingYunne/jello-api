@@ -27,7 +27,7 @@ Backend REST API for **Jello** — a Trello-inspired project management app. Bui
 | Auth | JWT (access + refresh token) |
 | Real-time | Socket.IO |
 | File Storage | Cloudinary |
-| Email | Brevo / MailerSend |
+| Email | MailerSend |
 | Upload | Multer |
 | Build | Babel (ESM → CJS) |
 | Linting | ESLint + Prettier |
