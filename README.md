@@ -10,7 +10,7 @@ Backend REST API for **Jello** — a Trello-inspired project management app. Bui
 
 - **Board, Column & Card management** — full CRUD with drag-and-drop support
 - **Authentication** — JWT-based login/logout with access & refresh token rotation
-- **Email verification** — account activation via email (Brevo / MailerSend)
+- **Email verification** — account activation via email (MailerSend)
 - **Real-time collaboration** — invite users to boards via WebSocket (Socket.IO)
 - **File uploads** — avatar and card cover image upload via Cloudinary (Multer)
 - **Input validation** — request validation on every route before hitting controllers
